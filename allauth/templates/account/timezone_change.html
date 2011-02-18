@@ -10,7 +10,7 @@
     
     <p>{% trans "Pinax can localize all times into your preferred timezone. Change your timezone below." %}</p>
     
-    <form method="POST" action="" class="uniForm">
+    <form method="POST" action="">
         {% csrf_token %}
         <fieldset class="inlineLabels">
             {{ form }}
