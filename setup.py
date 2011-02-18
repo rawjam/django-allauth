@@ -10,11 +10,9 @@ METADATA = dict(
     long_description=open('README.rst').read(),
     url='http://github.com/pennersr/django-allauth',
     keywords='django auth account social openid twitter facebook oauth registration',
-    install_requires=['django', 
-                      'oauth2', 
+    install_requires=['oauth2',
                       'python-openid',
-                      'django-email-confirmation',
-                      'django-uni-form'],
+                      'django-email-confirmation'],
     include_package_data=True,
     classifiers=[
         'Development Status :: 4 - Beta',

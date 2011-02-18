@@ -26,6 +26,7 @@ def signup(request, **kwargs):
     form_class = kwargs.pop("form_class", SignupForm)
     template_name = kwargs.pop("template_name", 
                                'socialaccount/signup.html')
+
     data = signup['data']
     if request.method == "POST":
         form = form_class(request.POST)
