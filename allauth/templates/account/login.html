@@ -1,6 +1,6 @@
 {% extends "site_base.html" %}
 
-{% load i18n %}
+{% load i18n uni_form_tags %}
 
 {% load account_tags %}
 
@@ -16,10 +16,10 @@
         <p>{% blocktrans %}No account? <a href="{{ signup_url }}">Sign up</a> for an new account, or sign in using an existing <a href="{{social_login_url }}">3rd party account</a>.{% endblocktrans %}</p>
     {% endif %}
 
-    <form class="login" method="POST" action="{% url account_login %}">
+    <form class="uniForm" method="POST" action="{% url account_login %}">
         {% csrf_token %}
         <fieldset class="inlineLabels">
-            {{ form.as_p }}
+            {{ form.as_uni_form }}
             {% if redirect_field_value %}
                 <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
             {% endif %}
