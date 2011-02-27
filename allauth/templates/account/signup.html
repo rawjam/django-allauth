@@ -27,6 +27,8 @@
         </form>
         
         <p>{% trans "Or sign up with a third party account" %}</p>
-        {% include "socialaccount/snippets/provider_list.html" %}
+        <ul class="socialaccount_provider_list">
+            {% include "socialaccount/snippets/provider_list.html" %}
+        </ul>
     {% endif %}
 {% endblock %}

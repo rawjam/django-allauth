@@ -1,0 +1,21 @@
+.socialaccount_provider_list li {
+    float: left; padding-right: 10px;
+}
+.socialaccount_provider {
+    height:  32px; width:  32px;
+}
+.socialaccount_provider.google {
+    background:  url(../img/google_32.png);
+}
+.socialaccount_provider.facebook {
+    background:  url(../img/facebook_32.png);
+}
+.socialaccount_provider.twitter {
+    background:  url(../img/twitter_32.png);
+}
+.socialaccount_provider.yahoo {
+    background:  url(../img/yahoo_32.png);
+}
+.socialaccount_provider.openid {
+    background:  url(../img/openid_32.png);
+}

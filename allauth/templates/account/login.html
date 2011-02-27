@@ -19,7 +19,7 @@
     <form class="uniForm" method="POST" action="{% url account_login %}">
         {% csrf_token %}
         <fieldset class="inlineLabels">
-            {{ form.as_uni_form }}
+            {{ form|as_uni_form }}
             {% if redirect_field_value %}
                 <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
             {% endif %}
@@ -30,6 +30,11 @@
             </div>
         </fieldset>
     </form>
+    
+    <p>{% trans "Or login with a third party account" %}</p>
+    <ul class="socialaccount_provider_list">
+        {% include "socialaccount/snippets/provider_list.html" %}
+    </ul>
     
     {% if user.is_authenticated %}
     {% include "account/snippets/already_logged_in.html" %}
