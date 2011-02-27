@@ -4,17 +4,5 @@
 <dict>
 	<key>ESProjectShowHiddenFilesKey</key>
 	<false/>
-	<key>com.macrabbit.Espresso.Workspace.Tabs</key>
-	<dict>
-		<key>Tabs</key>
-		<array>
-			<dict>
-				<key>DocumentURL</key>
-				<string>file://localhost/Users/ben/Documents/Dev/contrib/django-allauth/requirements.txt</string>
-				<key>StateType</key>
-				<string>DefaultTab</string>
-			</dict>
-		</array>
-	</dict>
 </dict>
 </plist>
