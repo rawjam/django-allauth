@@ -10,17 +10,17 @@
     background-repeat: no-repeat;
 }
 .socialaccount_provider.google {
-    background-image:  url(../allauth/img/google_32.png);
+    background-image:  url(../img/google_32.png);
 }
 .socialaccount_provider.facebook {
-    background:  url(../allauth/img/facebook_32.png);
+    background:  url(../img/facebook_32.png);
 }
 .socialaccount_provider.twitter {
-    background:  url(../allauth/img/twitter_32.png);
+    background:  url(../img/twitter_32.png);
 }
 .socialaccount_provider.yahoo {
-    background:  url(../allauth/img/yahoo_32.png);
+    background:  url(../img/yahoo_32.png);
 }
 .socialaccount_provider.openid {
-    background:  url(../allauth/img/openid_32.png);
+    background:  url(../img/openid_32.png);
 }
