@@ -37,8 +37,12 @@ def login(request):
             account.name = data['name']
             if account.pk:
                 account.save()
-            data = dict(email=email,
-                        facebook_me=data)
+            data = dict(
+                email=email,
+                first_name=data.get('first_name', None),
+                last_name=data.get('last_name', None),
+                gender=data.get('gender', None),
+                facebook_me=data)
             ret = complete_social_login(request, data, account)
     if not ret:
         ret = render_authentication_error(request)
