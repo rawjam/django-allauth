@@ -1,13 +1,16 @@
+from datetime import timedelta, datetime
+
 from django.contrib import messages
-from django.template import RequestContext
-from django.shortcuts import render_to_response
+from django.shortcuts import render
+from django.contrib.sites.models import Site
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth import login
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.http import HttpResponseRedirect
+from django.utils import importlib
 
-from emailconfirmation.models import EmailAddress
+from emailconfirmation.models import EmailAddress, EmailConfirmation
 
 from signals import user_logged_in
 
@@ -42,9 +45,20 @@ def get_default_redirect(request, redirect_field_name="next",
     return redirect_to
 
 
+
+_user_display_callable = None
+
 def user_display(user):
-    func = getattr(settings, "ACCOUNT_USER_DISPLAY", lambda user: user.username)
-    return func(user)
+    global _user_display_callable
+    if not _user_display_callable:
+        f = getattr(settings, "ACCOUNT_USER_DISPLAY", 
+                    lambda user: user.username)
+        if not hasattr(f, '__call__'):
+            assert isinstance(f, str)
+            pkg, func = f.rsplit('.',1)
+            f = getattr(importlib.import_module(pkg), func)
+        _user_display_callable = f
+    return _user_display_callable(user)
 
 
 # def has_openid(request):
@@ -59,7 +73,17 @@ def user_display(user):
 #     return False
 
 
-def perform_login(request, user):
+def perform_login(request, user, redirect_url=None):
+    # not is_active: social users are redirected to a template
+    # local users are stopped due to form validation checking is_active
+    assert user.is_active
+    if (app_settings.EMAIL_VERIFICATION
+        and not EmailAddress.objects.filter(user=user,
+                                            verified=True).exists()):
+        send_email_confirmation(user, request=request)
+        return render(request, 
+                      "account/verification_sent.html",
+                      { "email": user.email })
     # HACK: This may not be nice. The proper Django way is to use an
     # authentication backend, but I fail to see any added benefit
     # whereas I do see the downsides (having to bother the integrator
@@ -68,33 +92,69 @@ def perform_login(request, user):
         user.backend = "django.contrib.auth.backends.ModelBackend"
     user_logged_in.send(sender=user.__class__, request=request, user=user)
     login(request, user)
+    messages.add_message(request, messages.SUCCESS,
+                         ugettext("Successfully signed in as %(user)s.") % { "user": user_display(user) } )
+            
+    if not redirect_url:
+        redirect_url = get_default_redirect(request)
+    return HttpResponseRedirect(redirect_url)
+
 
 def complete_signup(request, user, success_url):
-    if app_settings.EMAIL_VERIFICATION:
-        ctx = {
-            "email": user.email,
-            "success_url": success_url,
-        }
-        ctx = RequestContext(request, ctx)
-        return render_to_response("account/verification_sent.html", ctx)
-    else:
-        perform_login(request, user)
-        messages.add_message(request, messages.SUCCESS,
-            ugettext("Successfully signed in as %(user)s.") % {
-                "user": user_display(user)
-            }
-        )
-        return HttpResponseRedirect(success_url)
+    return perform_login(request, user, redirect_url=success_url)
 
 
 def send_email_confirmation(user, request=None):
+    """
+    E-mail verification mails are sent:
+    a) Explicitly: when a user signs up
+    b) Implicitly: when a user attempts to log in using an unverified
+    e-mail while EMAIL_VERIFICATION is mandatory.
+
+    Especially in case of b), we want to limit the number of mails
+    sent (consider a user retrying a few times), which is why there is
+    a cooldown period before sending a new mail.
+    """
+    COOLDOWN_PERIOD = timedelta(minutes=3)
     email = user.email
     if email:
-        if request:
-            messages.add_message \
-                (request, messages.INFO,
-                 _(u"Confirmation e-mail sent to %(email)s") % {
-                    "email": email,
-                    }
-                 )
-        EmailAddress.objects.add_email(user, user.email)
+        try:
+            email_address = EmailAddress.objects.get(user=user,
+                                                     email__iexact=email)
+            email_confirmation_sent = EmailConfirmation.objects \
+                .filter(sent__gt=datetime.now() - COOLDOWN_PERIOD,
+                        email_address=email_address) \
+                .exists()
+            if not email_confirmation_sent:
+                EmailConfirmation.objects.send_confirmation(email_address)
+        except EmailAddress.DoesNotExist:
+            EmailAddress.objects.add_email(user, user.email)
+            email_confirmation_sent = False
+        if request and not email_confirmation_sent:
+            messages.info(request,
+                _(u"Confirmation e-mail sent to %(email)s") % {"email": email}
+            )
+
+def format_email_subject(subject):
+    prefix = app_settings.EMAIL_SUBJECT_PREFIX
+    if prefix is None:
+        site = Site.objects.get_current()
+        prefix = "[{name}] ".format(name=site.name)
+    return prefix + unicode(subject)
+
+
+def sync_user_email_addresses(user):
+    """
+    Keep user.email in sync with user.emailadress_set. 
+
+    Under some circumstances the user.email may not have ended up as
+    an EmailAddress record, e.g. in the case of manually created admin
+    users.
+    """
+    if user.email and not EmailAddress.objects.filter(user=user,
+                                                      email=user.email).exists():
+        EmailAddress.objects.create(user=user,
+                                    email=user.email,
+                                    primary=False,
+                                    verified=False)
+    

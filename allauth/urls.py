@@ -1,16 +1,21 @@
-from django.conf.urls.defaults import *
+from django.conf.urls.defaults import url, patterns, include
+from django.utils import importlib
+
+from allauth.socialaccount import providers
+
 import app_settings
 
-urlpatterns = patterns('',
-                       url('^', include('allauth.account.urls')),
-                       url('^social/', include('allauth.socialaccount.urls')))
+urlpatterns = patterns('', url('^', include('allauth.account.urls')))
 
-if app_settings.TWITTER_ENABLED:
-    urlpatterns += patterns('',
-                            url('^twitter/', include('allauth.twitter.urls')))
-if app_settings.FACEBOOK_ENABLED:
-    urlpatterns += patterns('',
-                            url('^facebook/', include('allauth.facebook.urls')))
-if app_settings.OPENID_ENABLED:
-    urlpatterns += patterns('',
-                            url('^openid/', include('allauth.openid.urls')))
+if app_settings.SOCIALACCOUNT_ENABLED:
+    urlpatterns += patterns('', url('^social/', 
+                                    include('allauth.socialaccount.urls')))
+
+for provider in providers.registry.get_list():
+    try:
+        prov_mod = importlib.import_module(provider.package + '.urls')
+    except ImportError:
+        continue
+    prov_urlpatterns = getattr(prov_mod, 'urlpatterns', None)
+    if prov_urlpatterns:
+        urlpatterns += prov_urlpatterns
