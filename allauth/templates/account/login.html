@@ -17,17 +17,7 @@
     below:{% endblocktrans %}
     </p>
     <div class="row">
-        {% if socialaccount.providers  %}
-            <div class="span5">
-                <ul class="socialaccount_providers">
-                    {% include "socialaccount/snippets/provider_list.html" %}
-                </ul>
-                
-                {% include "socialaccount/snippets/login_extra.html" %}
-                <!--div class="login-or">{% trans 'or' %}</div-->
-            </div>
-        {% endif %}
-        <div class="span5">
+        <div class="span4">
             <form action="{% url account_login %}" method="POST">{% csrf_token %}
                 <fieldset>
                     {% render_form form %}
@@ -41,6 +31,16 @@
                 </fieldset>
             </form>
         </div>
+        {% if socialaccount.providers  %}
+            <div class="span5">
+                <ul class="socialaccount_providers">
+                    {% include "socialaccount/snippets/provider_list.html" %}
+                </ul>
+                
+                {% include "socialaccount/snippets/login_extra.html" %}
+                <!--div class="login-or">{% trans 'or' %}</div-->
+            </div>
+        {% endif %}
     </div>
     
 {% endif %}
