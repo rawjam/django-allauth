@@ -5,6 +5,7 @@ from django.shortcuts import render_to_response, get_object_or_404
 from django.template import RequestContext
 from django.utils.http import base36_to_int
 from django.utils.translation import ugettext
+from django.conf import settings
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required

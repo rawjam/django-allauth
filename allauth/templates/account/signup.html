@@ -1,29 +1,37 @@
 {% extends "account/base.html" %}
 
-{% load i18n %}
+{% load i18n common_tags %}
 
-{% block head_title %}{% trans "Signup" %}{% endblock %}
+{% block head_title %}{% trans "Sign Up" %}{% endblock %}
+{% block page_title %}{% trans "Sign Up" %}{% endblock %}
 
 {% block content %}
-    <h1>{% trans "Sign Up" %}</h1>
-    
     {% if user.is_authenticated %}
         {% include "account/snippets/already_logged_in.html" %}
     {% else %}
-    <p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
+        <p class="lead">{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
         
-        <form class="signup" id="signup_form" method="post" action="{% url account_signup %}">
-            {% csrf_token %}
-            {{ form.as_p }}
-            {% if redirect_field_value %}
-            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-            {% endif %}
-            <button type="submit">{% trans "Sign Up" %} &raquo;</button>
-        </form>
+        <div class="row">
+            <div class="span5">
+                <form action="{% url account_signup %}" method="POST" id="signup_form">{% csrf_token %}
+                    <fieldset>
+                        {% render_form form %}
+                        {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                        {% endif %}
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">{% trans "Sign Up" %}</button>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="span5">
+                <p>{% trans "Or sign up with a third party account" %}</p>
+                <ul class="socialaccount_provider_list">
+                    {% include "socialaccount/snippets/provider_list.html" %}
+                </ul>
+            </div>
+        </div>
         
-        <p>{% trans "Or sign up with a third party account" %}</p>
-        <ul class="socialaccount_provider_list">
-            {% include "socialaccount/snippets/provider_list.html" %}
-        </ul>
     {% endif %}
 {% endblock %}
