@@ -10,7 +10,10 @@ from allauth.socialaccount.helpers import complete_social_login
 
 
 class OAuth2Adapter(object):
-
+    scope = None
+    extra_authorize_url_params = ""
+    extra_access_token_post_params = {}
+    
     def get_app(self, request):
         return SocialApp.objects.get_current(self.provider_id)
 
@@ -37,7 +40,10 @@ class OAuth2View(object):
         client = OAuth2Client(self.request, app.key, app.secret,
                               self.adapter.authorize_url,
                               self.adapter.access_token_url,
-                              callback_url)
+                              callback_url,
+                              self.adapter.scope,
+                              self.adapter.extra_authorize_url_params,
+                              self.adapter.extra_access_token_post_params)
         return client
 
 
@@ -62,10 +68,8 @@ class OAuth2CompleteView(OAuth2View):
         client = self.get_client(request, app)
         provider_id = self.adapter.provider_id
         try:
-            access_token = client.get_access_token(request.GET['code'])
-            uid, data, extra_data = self.adapter.get_user_info(request,
-                                                               app,
-                                                               access_token)
+            access_token, access_token_response = client.get_access_token(request.GET['code'])
+            uid, data, extra_data = self.adapter.get_user_info(request, access_token_response, app, access_token)
         except OAuth2Error:
             return render_authentication_error(request)
         # TODO: DRY, duplicates OAuth logic
@@ -73,6 +77,7 @@ class OAuth2CompleteView(OAuth2View):
             account = SocialAccount.objects.get(provider=provider_id, uid=uid)
         except SocialAccount.DoesNotExist:
             account = SocialAccount(provider=provider_id, uid=uid)
+        
         account.extra_data = extra_data
         if account.pk:
             account.save()

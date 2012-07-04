@@ -88,6 +88,13 @@ class SocialAccount(models.Model):
             if not created and token.token != access_token:
                 token.token = access_token
                 token.save()
+        elif 'access_token' in data:
+            self.save()
+            access_token = data['access_token']
+            token, created = SocialToken.objects.get_or_create(app=SocialApp.objects.get_current('instagram'), account=self, defaults={'token': access_token})
+            if not created and token.token != access_token:
+                token.token = access_token
+                token.save()
         else:
             self.save()
 
