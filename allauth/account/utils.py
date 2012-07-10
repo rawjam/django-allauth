@@ -18,6 +18,7 @@ import app_settings
 
 
 LOGIN_REDIRECT_URLNAME = getattr(settings, "LOGIN_REDIRECT_URLNAME", "")
+LOGIN_SUCCESSFUL_MESSAGE = getattr(settings, "LOGIN_SUCCESSFUL_MESSAGE", "Successfully signed in as %(user)s.")
 
 
 def get_default_redirect(request, redirect_field_name="next",
@@ -93,7 +94,7 @@ def perform_login(request, user, redirect_url=None):
     user_logged_in.send(sender=user.__class__, request=request, user=user)
     login(request, user)
     messages.add_message(request, messages.SUCCESS,
-                         ugettext("Successfully signed in as %(user)s.") % { "user": user_display(user) } )
+                         ugettext(LOGIN_SUCCESSFUL_MESSAGE) % { "user": user_display(user) } )
             
     if not redirect_url:
         redirect_url = get_default_redirect(request)

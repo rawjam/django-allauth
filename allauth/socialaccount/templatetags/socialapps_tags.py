@@ -7,4 +7,7 @@ register = template.Library()
 
 @register.assignment_tag
 def get_provider_app(provider):
-    return SocialApp.objects.get_current(provider)
+    try:
+        return SocialApp.objects.get_current(provider)
+    except SocialApp.DoesNotExist:
+        return ''

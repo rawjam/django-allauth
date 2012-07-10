@@ -17,7 +17,7 @@
     below:{% endblocktrans %}
     </p>
     <div class="row">
-        <div class="span4">
+        <div class="span5">
             <form action="{% url account_login %}" method="POST">{% csrf_token %}
                 <fieldset>
                     {% render_form form %}
@@ -32,7 +32,7 @@
             </form>
         </div>
         {% if socialaccount.providers  %}
-            <div class="span5">
+            <div class="span4">
                 <ul class="socialaccount_providers">
                     {% include "socialaccount/snippets/provider_list.html" %}
                 </ul>
