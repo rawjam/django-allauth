@@ -1,3 +1,5 @@
+{% load socialaccount_tags %}
+
 <div id="fb-root"></div>
 <script>
   window.FB_login = function() {};
@@ -37,7 +39,7 @@
    }(document));
 </script>
 
-<form id="_fb_login" method="post" action="{% url facebook_login %}">
+<form id="_fb_login" method="post" action="{% url facebook_login %}{{request.get_full_path|get_parameters}}">
 {% csrf_token %}
 <input type="hidden" name="next" value="" id="_fb_next_url"/>
 <input type="hidden" name="access_token" id="_fb_access_token"/>
