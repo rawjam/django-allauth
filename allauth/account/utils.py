@@ -18,11 +18,13 @@ from emailconfirmation.models import EmailAddress, EmailConfirmation
 
 from signals import user_logged_in
 from random import random
+from signals import user_logged_in, user_signed_up
 
 import app_settings
 
 
 LOGIN_REDIRECT_URLNAME = getattr(settings, "LOGIN_REDIRECT_URLNAME", "")
+LOGIN_SUCCESSFUL_MESSAGE = getattr(settings, "LOGIN_SUCCESSFUL_MESSAGE", "Successfully signed in as %(user)s.")
 
 
 def get_default_redirect(request, redirect_field_name="next",
@@ -98,7 +100,7 @@ def perform_login(request, user, redirect_url=None):
     user_logged_in.send(sender=user.__class__, request=request, user=user)
     login(request, user)
     messages.add_message(request, messages.SUCCESS,
-                         ugettext("Successfully signed in as %(user)s.") % { "user": user_display(user) } )
+                         ugettext(LOGIN_SUCCESSFUL_MESSAGE) % { "user": user_display(user) } )
             
     if not redirect_url:
         redirect_url = get_default_redirect(request)
@@ -106,7 +108,8 @@ def perform_login(request, user, redirect_url=None):
 
 
 def complete_signup(request, user, success_url):
-    return perform_login(request, user, redirect_url=success_url)
+	user_signed_up.send(sender=user.__class__, request=request, user=user)
+	return perform_login(request, user, redirect_url=success_url)
 
 def html_send_confirmation(email_address):
     salt = sha_constructor(str(random())).hexdigest()[:5]
@@ -130,7 +133,6 @@ def html_send_confirmation(email_address):
     subject = "".join(subject.splitlines())
     template = "emailconfirmation/email_confirmation_message.txt"
 
-    print "-----"
     send_templated_email(template, context, subject, [email_address.email], [])
 
     emailconf = EmailConfirmation.objects.create(
@@ -161,19 +163,14 @@ def send_email_confirmation(user, request=None):
     """
     COOLDOWN_PERIOD = timedelta(minutes=3)
     email = user.email
-    print "1"
     if email:
-        print "2"
         try:
             email_address = EmailAddress.objects.get(user=user, email__iexact=email)
-            print "3"
             email_confirmation_sent = EmailConfirmation.objects \
                 .filter(sent__gt=datetime.now() - COOLDOWN_PERIOD,
                         email_address=email_address) \
                 .exists()
-            print email_address, email_confirmation_sent
             if not email_confirmation_sent:
-                print "----ddd"
                 html_send_confirmation(email_address)
         except EmailAddress.DoesNotExist:
             add_email(user, user.email)

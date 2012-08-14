@@ -47,3 +47,10 @@ class ProvidersMediaJSNode(template.Node):
 @register.tag
 def providers_media_js(parser, token):
     return ProvidersMediaJSNode()
+
+@register.filter
+def get_parameters(url):
+    splited_url = url.split('?')
+    if len(splited_url) > 1:
+        return '?%s' % '?'.join(splited_url[1:]) 
+    return ''

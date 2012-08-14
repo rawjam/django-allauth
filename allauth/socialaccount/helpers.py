@@ -15,6 +15,7 @@ from allauth.account.utils import send_email_confirmation, \
 from allauth.account import app_settings as account_settings
 
 import app_settings
+from signals import user_logged_in, user_signed_up
 
 
 def _process_signup(request, data, account):
@@ -116,6 +117,7 @@ def complete_social_login(request, data, account):
         else:
             # New social user
             ret = _process_signup(request, data, account)
+    
     return ret
 
 
@@ -169,4 +171,6 @@ def complete_social_signup(request, user, account):
     success_url = get_login_redirect_url(request)
     if app_settings.AVATAR_SUPPORT:
         _copy_avatar(request, user, account)
+
+    user_signed_up.send(sender=user.__class__, request=request, user=user)
     return complete_signup(request, user, success_url)
