@@ -4,15 +4,20 @@ from django.contrib import messages
 from django.shortcuts import render
 from django.contrib.sites.models import Site
 from django.conf import settings
+from django.db import models, IntegrityError
 from django.core.urlresolvers import reverse
 from django.contrib.auth import login
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.http import HttpResponseRedirect
+from django.utils.hashcompat import sha_constructor
+from django.template.loader import render_to_string
 from django.utils import importlib
+from rawjam.core.utils.comms import create_threaded_email, send_templated_email
 
 from emailconfirmation.models import EmailAddress, EmailConfirmation
 
 from signals import user_logged_in
+from random import random
 
 import app_settings
 
@@ -103,6 +108,45 @@ def perform_login(request, user, redirect_url=None):
 def complete_signup(request, user, success_url):
     return perform_login(request, user, redirect_url=success_url)
 
+def html_send_confirmation(email_address):
+    salt = sha_constructor(str(random())).hexdigest()[:5]
+    confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
+    current_site = Site.objects.get_current()
+    # check for the url with the dotted view path
+    try:
+        path = reverse("emailconfirmation.views.confirm_email", args=[confirmation_key])
+    except NoReverseMatch:
+        # or get path with named urlconf instead
+        path = reverse("emailconfirmation_confirm_email", args=[confirmation_key])
+    activate_url = u"http://%s%s" % (unicode(current_site.domain), path)
+    context = {
+        "user": email_address.user,
+        "activate_url": activate_url,
+        "current_site": current_site,
+        "confirmation_key": confirmation_key,
+    }
+    subject = render_to_string("emailconfirmation/email_confirmation_subject.txt", context)
+    # remove superfluous line breaks
+    subject = "".join(subject.splitlines())
+    template = "emailconfirmation/email_confirmation_message.txt"
+
+    print "-----"
+    send_templated_email(template, context, subject, [email_address.email], [])
+
+    emailconf = EmailConfirmation.objects.create(
+        email_address=email_address,
+        sent=datetime.now(),
+        confirmation_key=confirmation_key)
+    return emailconf
+
+def add_email(user, email):
+    try:
+        email_address = EmailAddress.objects.create(user=user, email=email)
+        html_send_confirmation(email_address)
+        return email_address
+    except IntegrityError:
+        return None
+
 
 def send_email_confirmation(user, request=None):
     """
@@ -117,18 +161,22 @@ def send_email_confirmation(user, request=None):
     """
     COOLDOWN_PERIOD = timedelta(minutes=3)
     email = user.email
+    print "1"
     if email:
+        print "2"
         try:
-            email_address = EmailAddress.objects.get(user=user,
-                                                     email__iexact=email)
+            email_address = EmailAddress.objects.get(user=user, email__iexact=email)
+            print "3"
             email_confirmation_sent = EmailConfirmation.objects \
                 .filter(sent__gt=datetime.now() - COOLDOWN_PERIOD,
                         email_address=email_address) \
                 .exists()
+            print email_address, email_confirmation_sent
             if not email_confirmation_sent:
-                EmailConfirmation.objects.send_confirmation(email_address)
+                print "----ddd"
+                html_send_confirmation(email_address)
         except EmailAddress.DoesNotExist:
-            EmailAddress.objects.add_email(user, user.email)
+            add_email(user, user.email)
             email_confirmation_sent = False
         if request and not email_confirmation_sent:
             messages.info(request,
