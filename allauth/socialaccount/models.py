@@ -82,6 +82,9 @@ class SocialAccount(models.Model):
     def get_provider_account(self):
         return self.get_provider().wrap_account(self)
 
+    def get_token_args(self, app=None):
+        return self.get_provider_account().get_token_args(app)
+
     def sync(self, data):
         # FIXME: to be refactored when provider classes are introduced
         if self.provider == 'facebook':
@@ -111,6 +114,7 @@ class SocialToken(models.Model):
     account = models.ForeignKey(SocialAccount)
     token = models.CharField(max_length=200)
     token_secret = models.CharField(max_length=200, blank=True)
+    expiry_date = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ('app', 'account')
@@ -118,6 +122,12 @@ class SocialToken(models.Model):
     def __unicode__(self):
         return self.token
 
+    def save(self, *args, **kwargs):
+        self.expiry_date = kwargs.pop('expiry_date', None)
+        updated = kwargs.pop('updated', False)
+        super(SocialToken, self).save(*args, **kwargs)
+        if not updated:
+            self.account.get_provider_account().update_token(self.app, self)
 
 class SocialLogin(object):
     """

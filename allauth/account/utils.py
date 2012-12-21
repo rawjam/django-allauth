@@ -118,7 +118,7 @@ def perform_login(request, user, redirect_url=None):
 
 
 def complete_signup(request, user, success_url):
-	signals.user_signed_up.send(sender=user.__class__, 
+    signals.user_signed_up.send(sender=user.__class__, 
                                 request=request, 
                                 user=user)
     return perform_login(request, user, redirect_url=success_url)

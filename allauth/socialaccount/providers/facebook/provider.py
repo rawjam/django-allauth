@@ -12,6 +12,8 @@ from allauth.socialaccount.models import SocialApp
 
 from locale import get_default_locale_callable
 
+import urllib2, urlparse, datetime
+
 
 class FacebookAccount(ProviderAccount):
     def get_profile_url(self):
@@ -20,6 +22,26 @@ class FacebookAccount(ProviderAccount):
     def get_avatar_url(self):
         uid = self.account.uid
         return 'http://graph.facebook.com/%s/picture?type=large' % uid
+
+    def build_token_args(self, social_app, social_token):
+        return {
+            'access_token': social_token.token,
+        }
+    
+    def update_token(self, social_app, social_token):
+        request_url = 'https://graph.facebook.com/oauth/access_token?client_id=%s&client_secret=%s&grant_type=fb_exchange_token&fb_exchange_token=%s' % (
+            social_app.key, social_app.secret, social_token.token)
+        try:
+            response = urlparse.parse_qs(urllib2.urlopen(request_url).read())
+            new_token = response.get('access_token', [None])[0]
+            timeleft = response.get('expires', [0])[0]
+            if new_token and timeleft:
+                expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=int(timeleft)+60)
+                social_token.token = new_token
+                social_token.save(expiry_date=expiry_date, updated=True)
+                
+        except urllib2.HTTPError, e:
+            print 'Request URL:\n%s\n\nError:\n%s' % (request_url, e.read() or 'Unknown error')
 
     def __unicode__(self):
         dflt = super(FacebookAccount, self).__unicode__()

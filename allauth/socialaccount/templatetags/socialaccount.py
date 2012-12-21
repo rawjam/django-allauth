@@ -64,3 +64,10 @@ def get_social_accounts(user):
         providers = accounts.setdefault(account.provider, [])
         providers.append(account)
     return accounts
+
+@register.filter
+def get_parameters(url):
+    splited_url = url.split('?')
+    if len(splited_url) > 1:
+        return '?%s' % '?'.join(splited_url[1:])
+    return ''
