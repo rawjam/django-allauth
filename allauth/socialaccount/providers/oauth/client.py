@@ -72,7 +72,12 @@ class OAuthClient(object):
         sign the request to obtain the access token
         """
         if self.request_token is None:
-            rt_url = self.request_token_url + '?' + urllib.urlencode({'oauth_callback': self.request.build_absolute_uri(self.callback_url)})
+            get_params = {}
+            if self.parameters:
+                get_params.update(self.parameters)
+            get_params['oauth_callback'] \
+                = self.request.build_absolute_uri(self.callback_url)
+            rt_url = self.request_token_url + '?' + urllib.urlencode(get_params)
             response, content = self.client.request(rt_url, "GET")
             if response['status'] != '200':
                 raise OAuthError(
@@ -81,7 +86,7 @@ class OAuthClient(object):
             self.request.session['oauth_%s_request_token' % get_token_prefix(self.request_token_url)] = self.request_token
         return self.request_token
 
-    def _get_access_token(self):
+    def get_access_token(self):
         """
         Obtain the access token to access private resources at the API endpoint.
         """
@@ -94,7 +99,7 @@ class OAuthClient(object):
             # Passing along oauth_verifier is required according to:
             # http://groups.google.com/group/twitter-development-talk/browse_frm/thread/472500cfe9e7cdb9#
             # Though, the custom oauth_callback seems to work without it?
-            if self.request.REQUEST.has_key('oauth_verifier'):
+            if 'oauth_verifier' in self.request.REQUEST:
                 at_url = at_url + '?' + urllib.urlencode({'oauth_verifier': self.request.REQUEST['oauth_verifier']})
             response, content = self.client.request(at_url, "GET")
             if response['status'] != '200':
@@ -122,7 +127,7 @@ class OAuthClient(object):
     def is_valid(self):
         try:
             self._get_rt_from_session()
-            self._get_access_token()
+            self.get_access_token()
         except OAuthError, e:
             self.errors.append(e.args[0])
             return False

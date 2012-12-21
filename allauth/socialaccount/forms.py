@@ -1,18 +1,31 @@
 from django.utils.translation import ugettext_lazy as _
 from django import forms
 
-from emailconfirmation.models import EmailAddress
-from models import SocialAccount
+from allauth.account.models import EmailAddress
 from allauth.account.forms import BaseSignupForm
 from allauth.account.utils import send_email_confirmation
 
+from models import SocialAccount
 
 class SignupForm(BaseSignupForm):
 
-    def save(self, request=None):
+    def __init__(self, *args, **kwargs):
+        self.sociallogin = kwargs.pop('sociallogin')
+        user = self.sociallogin.account.user
+        initial = { 'email': user.email or '',
+                    'username': user.username or '',
+                    'first_name': user.first_name or '',
+                    'last_name': user.last_name or '' }
+        kwargs['initial'] = initial
+        super(SignupForm, self).__init__(*args, **kwargs)
+
+    def save(self, request):
         new_user = self.create_user()
-        super(SignupForm, self).save(new_user) # Before confirmation (may alter first_name etc used in mail)
-        send_email_confirmation(new_user, request=request)
+        self.sociallogin.account.user = new_user
+        self.sociallogin.save()
+        super(SignupForm, self).save(new_user) 
+        # Confirmation last (save may alter first_name etc -- used in mail)
+        send_email_confirmation(request, new_user)
         return new_user
 
 
@@ -31,11 +44,11 @@ class DisconnectForm(forms.Form):
         if len(self.accounts) == 1:
             # No usable password would render the local account unusable
             if not self.user.has_usable_password():
-                raise forms.ValidationError(_("Your local account has no password setup."))
+                raise forms.ValidationError(_("Your account has no password set up."))
             # No email address, no password reset
             if EmailAddress.objects.filter(user=self.user,
                                            verified=True).count() == 0:
-                raise forms.ValidationError(_("Your local account has no verified e-mail address."))
+                raise forms.ValidationError(_("Your account has no verified e-mail address."))
         return self.cleaned_data
 
     def save(self):

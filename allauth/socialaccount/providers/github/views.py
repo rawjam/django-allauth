@@ -1,33 +1,35 @@
-import urllib
-import httplib2
-from django.utils import simplejson
-
 from allauth.socialaccount.providers.oauth2.views import (OAuth2Adapter,
                                                           OAuth2LoginView,
-                                                          OAuth2CompleteView)
+                                                          OAuth2CallbackView)
+from allauth.socialaccount import requests
+from allauth.socialaccount.models import SocialAccount, SocialLogin
+from allauth.utils import get_user_model
 
+from provider import GitHubProvider
 
-from models import GitHubProvider
+User = get_user_model()
 
 class GitHubOAuth2Adapter(OAuth2Adapter):
     provider_id = GitHubProvider.id
     access_token_url = 'https://github.com/login/oauth/access_token'
     authorize_url = 'https://github.com/login/oauth/authorize'
-    user_show_url = 'https://github.com/api/v2/json/user/show'
+    profile_url = 'https://api.github.com/user'
 
-    def get_user_info(self, request, app, access_token):
-        params = urllib.urlencode({ 'access_token': access_token })
-        url = self.user_show_url + '?' + params
-        # TODO: Proper exception handling et al
-        client = httplib2.Http()
-        resp, content = client.request(url, 'GET')
-        extra_data = simplejson.loads(content)['user']
+    def complete_login(self, request, app, token):
+        resp = requests.get(self.profile_url,
+                            params={ 'access_token': token.token })
+        extra_data = resp.json
         uid = str(extra_data['id'])
-        data = { 'username': extra_data['login'],
-                 'email': extra_data['email'],
-                 'first_name': extra_data['name'] }
-        return uid, data, extra_data
+        user = User(username=extra_data.get('login', ''),
+                    email=extra_data.get('email', ''),
+                    first_name=extra_data.get('name', ''))
+        account = SocialAccount(user=user,
+                                uid=uid,
+                                extra_data=extra_data,
+                                provider=self.provider_id)
+        return SocialLogin(account)
+
 
 oauth2_login = OAuth2LoginView.adapter_view(GitHubOAuth2Adapter)
-oauth2_complete = OAuth2CompleteView.adapter_view(GitHubOAuth2Adapter)
+oauth2_callback = OAuth2CallbackView.adapter_view(GitHubOAuth2Adapter)
 

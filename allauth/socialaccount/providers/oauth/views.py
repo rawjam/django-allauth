@@ -1,24 +1,23 @@
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 
-from allauth.utils import get_login_redirect_url
 from allauth.socialaccount.helpers import render_authentication_error
-from allauth.socialaccount.models import SocialAccount, SocialApp
 from allauth.socialaccount.providers.oauth.client import (OAuthClient,
                                                           OAuthError)
 from allauth.socialaccount.helpers import complete_social_login
-
+from allauth.socialaccount import providers
+from allauth.socialaccount.models import SocialToken, SocialLogin
 
 class OAuthAdapter(object):
 
-    def get_app(self, request):
-        return SocialApp.objects.get_current(self.provider_id)
-
-    def get_user_info(self):
+    def complete_login(self, request, app):
         """
-        Should return a triple of (user_id, user fields, extra_data)
+        Returns a SocialLogin instance
         """
         raise NotImplementedError
+
+    def get_provider(self):
+        return providers.registry.by_id(self.provider_id)
 
 
 class OAuthView(object):
@@ -32,20 +31,29 @@ class OAuthView(object):
         return view
 
     def _get_client(self, request, callback_url):
-        app = self.adapter.get_app(request)
+        provider = self.adapter.get_provider()
+        app = provider.get_app(request)
+        scope = ' '.join(provider.get_scope())
+        parameters = {}
+        if scope:
+            parameters['scope'] = scope
         client = OAuthClient(request, app.key, app.secret,
                              self.adapter.request_token_url,
                              self.adapter.access_token_url,
                              self.adapter.authorize_url,
-                             callback_url)
+                             callback_url,
+                             parameters=parameters)
         return client
 
 
 class OAuthLoginView(OAuthView):
     def dispatch(self, request):
         callback_url = reverse(self.adapter.provider_id + "_callback")
+        # TODO: Can't this be moved as query param into callback?
+        # Tried but failed somehow, needs further study...
+        request.session['oauth_login_state'] \
+            = SocialLogin.marshall_state(request)
         client = self._get_client(request, callback_url)
-        request.session['next'] = get_login_redirect_url(request)
         try:
             return client.get_redirect()
         except OAuthError:
@@ -58,30 +66,24 @@ class OAuthCallbackView(OAuthView):
         View to handle final steps of OAuth based authentication where the user
         gets redirected back to from the service provider
         """
-        login_done_url = reverse(self.adapter.provider_id + "_complete")
+        login_done_url = reverse(self.adapter.provider_id + "_callback")
         client = self._get_client(request, login_done_url)
         if not client.is_valid():
-            if request.GET.has_key('denied'):
+            if 'denied' in request.GET:
                 return HttpResponseRedirect(reverse('socialaccount_login_cancelled'))
             extra_context = dict(oauth_client=client)
             return render_authentication_error(request, extra_context)
-        # We're redirecting to the setup view for this oauth service
-        return HttpResponseRedirect(client.callback_url)
-
-
-class OAuthCompleteView(OAuthView):
-    def dispatch(self, request):
-        app = self.adapter.get_app(request)
-        provider_id = self.adapter.provider_id
+        app = self.adapter.get_provider().get_app(request)
         try:
-            uid, data, extra_data = self.adapter.get_user_info(request, app)
+            access_token = client.get_access_token()
+            token = SocialToken(app=app,
+                                token=access_token['oauth_token'],
+                                token_secret=access_token['oauth_token_secret'])
+            login = self.adapter.complete_login(request, app, token)
+            token.account = login.account
+            login.token = token
+            login.state = SocialLogin.unmarshall_state \
+                (request.session.pop('oauth_login_state', None))
+            return complete_social_login(request, login)
         except OAuthError:
             return render_authentication_error(request)
-        try:
-            account = SocialAccount.objects.get(provider=provider_id, uid=uid)
-        except SocialAccount.DoesNotExist:
-            account = SocialAccount(provider=provider_id, uid=uid)
-        account.extra_data = extra_data
-        if account.pk:
-            account.save()
-        return complete_social_login(request, data, account)
