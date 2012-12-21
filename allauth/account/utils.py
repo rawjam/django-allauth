@@ -12,20 +12,12 @@ from django.contrib import messages
 from django.shortcuts import render
 from django.contrib.sites.models import Site
 from django.conf import settings
-from django.db import models, IntegrityError
 from django.core.urlresolvers import reverse
 from django.contrib.auth import login
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.http import HttpResponseRedirect
-from django.utils.hashcompat import sha_constructor
-from django.template.loader import render_to_string
-from django.utils import importlib
-from rawjam.core.utils.comms import create_threaded_email, send_templated_email
 
 from allauth.utils import import_callable
-
-from signals import user_logged_in
-from random import random
 
 import signals
 
@@ -34,7 +26,6 @@ import app_settings
 from adapter import get_adapter
 
 LOGIN_REDIRECT_URLNAME = getattr(settings, "LOGIN_REDIRECT_URLNAME", "")
-LOGIN_SUCCESSFUL_MESSAGE = getattr(settings, "LOGIN_SUCCESSFUL_MESSAGE", "Successfully signed in as %(user)s.")
 
 
 def get_default_redirect(request, redirect_field_name="next",
@@ -110,8 +101,8 @@ def perform_login(request, user, redirect_url=None):
                                 user=user)
     login(request, user)
     messages.add_message(request, messages.SUCCESS,
-                         ugettext(LOGIN_SUCCESSFUL_MESSAGE) % { "user": user_display(user) } )
-            
+                         ugettext("Successfully signed in as %(user)s.") % { "user": user_display(user) } )
+
     if not redirect_url:
         redirect_url = get_default_redirect(request)
     return HttpResponseRedirect(redirect_url)
@@ -123,43 +114,6 @@ def complete_signup(request, user, success_url):
                                 user=user)
     return perform_login(request, user, redirect_url=success_url)
 
-def html_send_confirmation(email_address):
-    salt = sha_constructor(str(random())).hexdigest()[:5]
-    confirmation_key = sha_constructor(salt + email_address.email).hexdigest()
-    current_site = Site.objects.get_current()
-    # check for the url with the dotted view path
-    try:
-        path = reverse("emailconfirmation.views.confirm_email", args=[confirmation_key])
-    except NoReverseMatch:
-        # or get path with named urlconf instead
-        path = reverse("emailconfirmation_confirm_email", args=[confirmation_key])
-    activate_url = u"http://%s%s" % (unicode(current_site.domain), path)
-    context = {
-        "user": email_address.user,
-        "activate_url": activate_url,
-        "current_site": current_site,
-        "confirmation_key": confirmation_key,
-    }
-    subject = render_to_string("emailconfirmation/email_confirmation_subject.txt", context)
-    # remove superfluous line breaks
-    subject = "".join(subject.splitlines())
-    template = "emailconfirmation/email_confirmation_message.txt"
-
-    send_templated_email(template, context, subject, [email_address.email], [])
-
-    emailconf = EmailConfirmation.objects.create(
-        email_address=email_address,
-        sent=datetime.now(),
-        confirmation_key=confirmation_key)
-    return emailconf
-
-def add_email(user, email):
-    try:
-        email_address = EmailAddress.objects.create(user=user, email=email)
-        html_send_confirmation(email_address)
-        return email_address
-    except IntegrityError:
-        return None
 
 def setup_user_email(request, user):
     """
@@ -207,7 +161,7 @@ def send_email_confirmation(request, user):
                             email_address=email_address) \
                     .exists()
                 if not email_confirmation_sent:
-                    html_send_confirmation(email_address)
+                    email_address.send_confirmation(request)
             else:
                 email_confirmation_sent = True
         except EmailAddress.DoesNotExist:
