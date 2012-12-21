@@ -6,6 +6,7 @@ from django.template import RequestContext
 from django.utils.http import base36_to_int
 from django.utils.translation import ugettext
 from django.conf import settings
+from django import http
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -20,6 +21,8 @@ from forms import AddEmailForm, ChangePasswordForm
 from forms import LoginForm, ResetPasswordKeyForm
 from forms import ResetPasswordForm, SetPasswordForm, SignupForm
 from utils import sync_user_email_addresses
+
+import json
 
 def login(request, **kwargs):
     
@@ -204,7 +207,19 @@ def password_reset(request, **kwargs):
     
     return render_to_response(template_name, RequestContext(request, { "password_reset_form": password_reset_form, }))
 
+def password_reset_ajax(request, **kwargs):
+    """ This is expected to be called via AJAX, but doesnt neccessarily have to """
+    form_class = kwargs.pop("form_class", ResetPasswordForm)
+    msg = "Oops, it looks like there was a problem. Please try again."
+    if request.method == "POST":
+        password_reset_form = form_class(request.POST)
+        if password_reset_form.is_valid():
+            password_reset_form.save()
+            msg = "Password reset email sent to %s" % request.user.email
 
+    data = { 'fragments' : {"#reset-form": msg}}
+    return http.HttpResponse(json.dumps(data), mimetype="application/json")
+    
 def password_reset_done(request, **kwargs):
     
     return render_to_response(kwargs.pop("template_name", "account/password_reset_done.html"), RequestContext(request, {}))
