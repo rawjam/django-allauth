@@ -10,7 +10,6 @@
         {% include "account/snippets/already_logged_in.html" %}
     {% else %}
         <p class="lead">{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
-        
         <div class="row">
             <div class="span5">
                 <form action="{% url account_signup %}" method="POST" id="signup_form">{% csrf_token %}

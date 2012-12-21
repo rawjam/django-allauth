@@ -8,3 +8,4 @@ build
 dist
 django_allauth.egg-info
 django-allauth.esproj
+example/local_settings.py

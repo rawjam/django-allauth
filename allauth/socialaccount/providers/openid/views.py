@@ -11,16 +11,16 @@ from openid.extensions.sreg import SRegRequest, SRegResponse
 from openid.extensions.ax import FetchRequest, FetchResponse, AttrInfo
 
 from allauth.socialaccount.app_settings import QUERY_EMAIL
+from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.socialaccount.helpers import render_authentication_error
 from allauth.socialaccount.helpers import complete_social_login
-from allauth.socialaccount.models import SocialAccount
-from allauth.utils import valid_email_or_none
+from allauth.utils import valid_email_or_none, get_user_model
 
 from utils import DBOpenIDStore
 from forms import LoginForm
+from provider import OpenIDProvider
 
-import models
-
+User = get_user_model()
 
 class AXAttribute:
     CONTACT_EMAIL = 'http://axschema.org/contact/email'
@@ -37,7 +37,7 @@ def _openid_consumer(request):
 
 
 def login(request):
-    if request.GET.has_key('openid') or request.method == 'POST':
+    if 'openid' in request.GET or request.method == 'POST':
         form = LoginForm(request.REQUEST)
         if form.is_valid():
             client = _openid_consumer(request)
@@ -52,9 +52,8 @@ def login(request):
                                     required=True))
                     auth_request.addExtension(ax)
                 callback_url = reverse(callback)
-                next = request.GET.get('next')
-                if next:
-                    callback_url = callback_url + '?' + urlencode(dict(next=next))
+                state = SocialLogin.marshall_state(request)
+                callback_url = callback_url + '?' + urlencode(dict(state=state))
                 redirect_url = auth_request.redirectURL(
                     request.build_absolute_uri('/'),
                     request.build_absolute_uri(callback_url))
@@ -95,16 +94,14 @@ def callback(request):
         dict(request.REQUEST.items()),
         request.build_absolute_uri(request.path))
     if response.status == consumer.SUCCESS:
-        email = _get_email_from_response(response)
-        identity = response.identity_url
-        try:
-            account = SocialAccount.objects.get(uid=identity,
-                                                provider=models.OpenIDProvider.id)
-        except SocialAccount.DoesNotExist:
-            account = SocialAccount(uid=identity,
-                                    provider=models.OpenIDProvider.id)
-        data = dict(email=email)
-        ret = complete_social_login(request, data, account)
+        user = User(email=_get_email_from_response(response))
+        account = SocialAccount(uid=response.identity_url,
+                                provider=OpenIDProvider.id,
+                                user=user,
+                                extra_data={})
+        login = SocialLogin(account)
+        login.state = SocialLogin.unmarshall_state(request.REQUEST.get('state'))
+        ret = complete_social_login(request, login)
     elif response.status == consumer.CANCEL:
         ret = HttpResponseRedirect(reverse('socialaccount_login_cancelled'))
     else:

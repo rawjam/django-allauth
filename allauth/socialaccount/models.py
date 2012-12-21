@@ -1,7 +1,11 @@
 from django.db import models
 from django.contrib.auth import authenticate
-from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
+from django.utils import simplejson
+
+import allauth.app_settings
+from allauth.utils import get_login_redirect_url
+from allauth.account.adapter import get_adapter
 
 import providers
 from fields import JSONField
@@ -10,14 +14,13 @@ from fields import JSONField
 class SocialAppManager(models.Manager):
     def get_current(self, provider):
         site = Site.objects.get_current()
-        return self.get(site=site,
+        return self.get(sites__id=site.id,
                         provider=provider)
 
 
 class SocialApp(models.Model):
     objects = SocialAppManager()
 
-    site = models.ForeignKey(Site)
     provider = models.CharField(max_length=30, 
                                 choices=providers.registry.as_choices())
     name = models.CharField(max_length=40)
@@ -25,12 +28,17 @@ class SocialApp(models.Model):
                            help_text='App ID, or consumer key')
     secret = models.CharField(max_length=100,
                               help_text='API secret, or consumer secret')
+    # Most apps can be used across multiple domains, therefore we use
+    # a ManyToManyField. Note that Facebook requires an app per domain
+    # (unless the domains share a common base name).
+    # blank=True allows for disabling apps without removing them
+    sites = models.ManyToManyField(Site, blank=True)
 
     def __unicode__(self):
         return self.name
 
 class SocialAccount(models.Model):
-    user = models.ForeignKey(User)
+    user = models.ForeignKey(allauth.app_settings.USER_MODEL)
     provider = models.CharField(max_length=30,
                                 choices=providers.registry.as_choices())
     # Just in case you're wondering if an OpenID identity URL is going
@@ -74,6 +82,9 @@ class SocialAccount(models.Model):
     def get_provider_account(self):
         return self.get_provider().wrap_account(self)
 
+    def get_token_args(self, app=None):
+        return self.get_provider_account().get_token_args(app)
+
     def sync(self, data):
         # FIXME: to be refactored when provider classes are introduced
         if self.provider == 'facebook':
@@ -98,15 +109,127 @@ class SocialAccount(models.Model):
         else:
             self.save()
 
-
 class SocialToken(models.Model):
     app = models.ForeignKey(SocialApp)
     account = models.ForeignKey(SocialAccount)
     token = models.CharField(max_length=200)
     token_secret = models.CharField(max_length=200, blank=True)
+    expiry_date = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ('app', 'account')
 
     def __unicode__(self):
         return self.token
+
+    def save(self, *args, **kwargs):
+        self.expiry_date = kwargs.pop('expiry_date', None)
+        updated = kwargs.pop('updated', False)
+        super(SocialToken, self).save(*args, **kwargs)
+        if not updated:
+            self.account.get_provider_account().update_token(self.app, self)
+
+class SocialLogin(object):
+    """
+    Represents a social user that is in the process of being logged
+    in. This consists of the following information:
+
+    `account` (`SocialAccount` instance): The social account being
+    logged in. Providers are not responsible for checking whether or
+    not an account already exists or not. Therefore, a provider
+    typically creates a new (unsaved) `SocialAccount` instance. The
+    `User` instance pointed to by the account (`account.user`) may be
+    prefilled by the provider for use as a starting point later on
+    during the signup process.
+
+    `token` (`SocialToken` instance): An optional access token token
+    that results from performing a successful authentication
+    handshake.
+
+    `state` (`dict`): The state to be preserved during the
+    authentication handshake. Note that this state may end up in the
+    url (e.g. OAuth2 `state` parameter) -- do not put any secrets in
+    there. It currently only contains the url to redirect to after
+    login.
+    """
+
+    def __init__(self, account, token=None):
+        if token:
+            assert token.account is None or token.account == account
+            token.account = account
+        self.token = token
+        self.account = account
+        self.state = {}
+
+    def save(self):
+        user = self.account.user
+        user.save()
+        self.account.user = user
+        self.account.save()
+        if self.token:
+            self.token.account = self.account
+            self.token.save()
+
+    @property
+    def is_existing(self):
+        """
+        Account is temporary, not yet backed by a database record.
+        """
+        return self.account.pk
+
+    def lookup(self):
+        """
+        Lookup existing account, if any.
+        """
+        assert not self.is_existing
+        try:
+            a = SocialAccount.objects.get(provider=self.account.provider, 
+                                          uid=self.account.uid)
+            # Update account
+            a.extra_data = self.account.extra_data
+            self.account = a
+            a.save()
+            # Update token
+            if self.token:
+                assert not self.token.pk
+                try:
+                    t = SocialToken.objects.get(account=self.account,
+                                                app=self.token.app)
+                    t.token = self.token.token
+                    t.token_secret = self.token.token_secret
+                    t.save()
+                    self.token = t
+                except SocialToken.DoesNotExist:
+                    self.token.account = a
+                    self.token.save()
+        except SocialAccount.DoesNotExist:
+            pass
+    
+    def get_redirect_url(self, request, fallback=True):
+        if fallback and type(fallback) == bool:
+            fallback = get_adapter().get_login_redirect_url(request)
+        url = self.state.get('next') or fallback
+        return url
+            
+    @classmethod
+    def state_from_request(cls, request):
+        state = {}
+        next = get_login_redirect_url(request, fallback=None)
+        if next:
+            state['next'] = next
+        return state
+
+    @classmethod
+    def marshall_state(cls, request):
+        state = cls.state_from_request(request)
+        return simplejson.dumps(state)
+    
+    @classmethod
+    def unmarshall_state(cls, state_string):
+        if state_string:
+            state = simplejson.loads(state_string)
+        else:
+            state = {}
+        return state
+    
+            

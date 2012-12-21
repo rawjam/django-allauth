@@ -1,26 +1,63 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
+try:
+    from django.utils.timezone import now
+except ImportError:
+    from datetime import datetime
+    now = datetime.now
 
 from django.test import TestCase
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.test.client import Client
 from django.core import mail
 from django.contrib.sites.models import Site
+from django.test.client import RequestFactory
 
-from emailconfirmation.models import EmailAddress, EmailConfirmation
+from allauth.account.models import EmailAddress, EmailConfirmation
+from allauth.utils import get_user_model
 
-from app_settings import AuthenticationMethod
+from app_settings import AuthenticationMethod, EmailVerificationMethod
 import app_settings
+
+User = get_user_model()
 
 class AccountTests(TestCase):
     def setUp(self):
         self.OLD_EMAIL_VERIFICATION = app_settings.EMAIL_VERIFICATION
         self.OLD_AUTHENTICATION_METHOD = app_settings.AUTHENTICATION_METHOD
         self.OLD_SIGNUP_FORM_CLASS = app_settings.SIGNUP_FORM_CLASS
-        app_settings.EMAIL_VERIFICATION = True
+        self.OLD_USERNAME_REQUIRED = app_settings.USERNAME_REQUIRED
+        app_settings.EMAIL_VERIFICATION = EmailVerificationMethod.MANDATORY
         app_settings.AUTHENTICATION_METHOD = AuthenticationMethod.USERNAME
         app_settings.SIGNUP_FORM_CLASS = None
+        app_settings.USERNAME_REQUIRED = True
+
+        if 'allauth.socialaccount' in settings.INSTALLED_APPS:
+            # Otherwise ImproperlyConfigured exceptions may occur
+            from ..socialaccount.models import SocialApp
+            sa = SocialApp.objects.create(name='testfb',
+                                          provider='facebook')
+            sa.sites.add(Site.objects.get_current())
+
+
+    def test_signup_email_verified_externally(self):
+        request = RequestFactory().post(reverse('account_signup'),
+                      { 'username': 'johndoe',
+                        'email': 'john@doe.com',
+                        'password1': 'johndoe',
+                        'password2': 'johndoe' })
+        # Fake stash_email_verified
+        from django.contrib.messages.middleware import MessageMiddleware
+        from django.contrib.sessions.middleware import SessionMiddleware
+        SessionMiddleware().process_request(request)
+        MessageMiddleware().process_request(request)
+        request.session['account_email_verified'] ='john@doe.com'
+        from views import signup
+        resp = signup(request)
+        self.assertEquals(resp.status_code, 302)
+        self.assertEquals(resp['location'], settings.LOGIN_REDIRECT_URL)
+        self.assertEquals(len(mail.outbox), 0)
+
 
     def test_email_verification_mandatory(self):
         c = Client()
@@ -48,8 +85,10 @@ class AccountTests(TestCase):
             self.assertTemplateUsed(resp,
                                     'account/verification_sent.html')
             self.assertEquals(len(mail.outbox), attempt)
+            self.assertEquals(EmailConfirmation.objects.filter(email_address__email='john@doe.com').count(), 
+                              attempt)
             # Wait for cooldown
-            EmailConfirmation.objects.update(sent=datetime.now() 
+            EmailConfirmation.objects.update(sent=now()
                                              - timedelta(days=1))
         # Verify, and re-attempt to login.
         EmailAddress.objects.filter(user__username='johndoe') \
@@ -57,26 +96,27 @@ class AccountTests(TestCase):
         resp = c.post(reverse('account_login'),
                       { 'login': 'johndoe',
                         'password': 'johndoe'})
-        self.assertEquals(resp['location'], 
+        self.assertEquals(resp['location'],
                           'http://testserver'+settings.LOGIN_REDIRECT_URL)
-        
 
 
-            
-        
-    def x_test_email_escaping(self):
-        """
-        Test is only valid if emailconfirmation is listed after
-        allauth in INSTALLED_APPS
-        """
+
+
+
+    def test_email_escaping(self):
         site = Site.objects.get_current()
         site.name = '<enc&"test>'
         site.save()
         u = User.objects.create(username='test',
                                 email='foo@bar.com')
-        EmailAddress.objects.add_email(u, u.email)
+        request = RequestFactory().get('/')
+        EmailAddress.objects.add_email(request, u, u.email, confirm=True)
+        self.assertTrue(mail.outbox[0].subject[1:].startswith(site.name))
+                        
 
     def tearDown(self):
         app_settings.EMAIL_VERIFICATION = self.OLD_EMAIL_VERIFICATION
         app_settings.AUTHENTICATION_METHOD = self.OLD_AUTHENTICATION_METHOD
         app_settings.SIGNUP_FORM_CLASS = self.OLD_SIGNUP_FORM_CLASS
+        app_settings.USERNAME_REQUIRED = self.OLD_USERNAME_REQUIRED
+

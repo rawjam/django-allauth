@@ -3,25 +3,25 @@ from django.shortcuts import render_to_response
 from django.http import HttpResponseRedirect
 from django.template import RequestContext
 from django.core.urlresolvers import reverse
-from django.contrib.auth.models import User
 from django.utils.translation import ugettext_lazy as _
-from django.utils.http import urlencode
 from django.template.defaultfilters import slugify
 
-from allauth.utils import get_login_redirect_url, \
-    generate_unique_username, email_address_exists
+from allauth.utils import (generate_unique_username, email_address_exists,
+                           get_user_model)
 from allauth.account.utils import send_email_confirmation, \
     perform_login, complete_signup
 from allauth.account import app_settings as account_settings
 
+from models import SocialLogin
 import app_settings
-from signals import user_logged_in, user_signed_up
+import signals
 
+User = get_user_model()
 
-def _process_signup(request, data, account):
+def _process_signup(request, sociallogin):
     # If email is specified, check for duplicate and if so, no auto signup.
     auto_signup = app_settings.AUTO_SIGNUP
-    email = data.get('email')
+    email = sociallogin.account.user.email
     if auto_signup:
         # Let's check if auto_signup is really possible...
         if email:
@@ -43,33 +43,30 @@ def _process_signup(request, data, account):
             # Nope, email is required and we don't have it yet...
             auto_signup = False
     if not auto_signup:
-        request.session['socialaccount_signup'] = dict(data=data,
-                                                       account=account)
+        request.session['socialaccount_sociallogin'] = sociallogin
         url = reverse('socialaccount_signup')
-        next = request.REQUEST.get('next')
-        if next:
-            url = url + '?' + urlencode(dict(next=next))
         ret = HttpResponseRedirect(url)
     else:
         # FIXME: There is some duplication of logic inhere
         # (create user, send email, in active etc..)
-        username = generate_unique_username(data.get('username', 
-                                                     email or 'user'))
-        u = User(username=username,
-                 email=email or '',
-                 last_name=data.get('last_name', '')[0:User._meta.get_field('last_name').max_length],
-                 first_name=data.get('first_name', '')[0:User._meta.get_field('first_name').max_length])
+        u = sociallogin.account.user
+        u.username = generate_unique_username(u.username
+                                              or email 
+                                              or 'user')
+        u.last_name = (u.last_name or '') \
+            [0:User._meta.get_field('last_name').max_length]
+        u.first_name = (u.first_name or '') \
+            [0:User._meta.get_field('first_name').max_length]
+        u.email = email or ''
         u.set_unusable_password()
-        u.save()
-        account.user = u
-        account.sync(data)
-        send_email_confirmation(u, request=request)
-        ret = complete_social_signup(request, u, account)
+        sociallogin.save()
+        send_email_confirmation(request, u)
+        ret = complete_social_signup(request, sociallogin)
     return ret
 
 
-def _login_social_account(request, account):
-    user = account.user
+def _login_social_account(request, sociallogin):
+    user = sociallogin.account.user
     if not user.is_active:
         ret = render_to_response(
             'socialaccount/account_inactive.html',
@@ -77,7 +74,7 @@ def _login_social_account(request, account):
             context_instance=RequestContext(request))
     else:
         ret = perform_login(request, user, 
-                            redirect_url=get_login_redirect_url(request))
+                            redirect_url=sociallogin.get_redirect_url(request))
     return ret
 
 
@@ -87,11 +84,16 @@ def render_authentication_error(request, extra_context={}):
         extra_context, context_instance=RequestContext(request))
 
 
-def complete_social_login(request, data, account):
+def complete_social_login(request, sociallogin):
+    assert not sociallogin.is_existing
+    sociallogin.lookup()
+    signals.pre_social_login.send(sender=SocialLogin,
+                                  request=request, 
+                                  sociallogin=sociallogin)
     if request.user.is_authenticated():
-        if account.pk:
+        if sociallogin.is_existing:
             # Existing social account, existing user
-            if account.user != request.user:
+            if sociallogin.account.user != request.user:
                 # Social account of other user. Simply logging in may
                 # not be correct in the case that the user was
                 # attempting to hook up another social account to his
@@ -100,24 +102,24 @@ def complete_social_login(request, data, account):
                 # the social account from the other user, as that may
                 # render the account unusable.
                 pass
-            ret = _login_social_account(request, account)
+            ret = _login_social_account(request, sociallogin)
         else:
             # New social account
-            account.user = request.user
-            account.sync(data)
+            sociallogin.account.user = request.user
+            sociallogin.save()
+            default_next = reverse('socialaccount_connections')
+            next = sociallogin.get_redirect_url(request,
+                                                fallback=default_next)
             messages.add_message(request, messages.INFO, 
-                                 _('The social account has been connected'
-                                   ' to your existing account'))
-            return HttpResponseRedirect(request.REQUEST.get('next') or
-                                        reverse('socialaccount_connections'))
+                                 _('The social account has been connected'))
+            return HttpResponseRedirect(next)
     else:
-        if account.pk:
+        if sociallogin.is_existing:
             # Login existing user
-            ret = _login_social_account(request, account)
+            ret = _login_social_account(request, sociallogin)
         else:
             # New social user
-            ret = _process_signup(request, data, account)
-    
+            ret = _process_signup(request, sociallogin)
     return ret
 
 
@@ -167,10 +169,18 @@ def _copy_avatar(request, user, account):
             pass
 
 
-def complete_social_signup(request, user, account):
-    success_url = get_login_redirect_url(request)
+def complete_social_signup(request, sociallogin):
     if app_settings.AVATAR_SUPPORT:
-        _copy_avatar(request, user, account)
+        signals.user_signed_up.send(sender=user.__class__, request=request, user=user)
+        _copy_avatar(request, sociallogin.account.user, sociallogin.account)
+    return complete_signup(request, 
+                           sociallogin.account.user, 
+                           sociallogin.get_redirect_url(request))
 
-    user_signed_up.send(sender=user.__class__, request=request, user=user)
-    return complete_signup(request, user, success_url)
+
+# TODO: Factor out callable importing functionality
+# See: account.utils.user_display
+def import_path(path):
+    modname, _, attr = path.rpartition('.')
+    m = __import__(modname, fromlist=[attr])
+    return getattr(m, attr)
