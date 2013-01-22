@@ -337,7 +337,7 @@ def password_reset_ajax(request, **kwargs):
         password_reset_form = form_class(request.POST)
         if password_reset_form.is_valid():
             password_reset_form.save()
-            msg = "Password reset email sent to %s" % request.user.email
+            msg = "Password reset email sent to %s" % password_reset_form.cleaned_data["email"]
 
     data = { 'fragments' : {"#reset-form": msg}}
     return http.HttpResponse(json.dumps(data), mimetype="application/json")
