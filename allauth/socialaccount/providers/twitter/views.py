@@ -27,7 +27,7 @@ class TwitterOAuthAdapter(OAuthAdapter):
     request_token_url = 'https://api.twitter.com/oauth/request_token'
     access_token_url = 'https://api.twitter.com/oauth/access_token'
     # Issue #42 -- this one authenticates over and over again...
-    # authorize_url = 'https://api.twitter.com/oauth/authorize'
+    #authorize_url = 'https://api.twitter.com/oauth/authorize'
     authorize_url = 'https://api.twitter.com/oauth/authenticate'
 
     def complete_login(self, request, app, token):

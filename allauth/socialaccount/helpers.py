@@ -112,7 +112,7 @@ def complete_social_login(request, sociallogin):
                                                 fallback=default_next)
             messages.add_message(request, messages.INFO, 
                                  _('The social account has been connected'))
-            return HttpResponseRedirect(next)
+            ret = HttpResponseRedirect(next)
     else:
         if sociallogin.is_existing:
             # Login existing user
@@ -120,6 +120,10 @@ def complete_social_login(request, sociallogin):
         else:
             # New social user
             ret = _process_signup(request, sociallogin)
+    
+    if sociallogin.redirect_account_url:      
+        return HttpResponseRedirect('%s?social_account=%s' % (sociallogin.redirect_account_url, sociallogin.account.id))
+
     return ret
 
 

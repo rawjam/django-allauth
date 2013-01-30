@@ -37,11 +37,20 @@ class OAuthView(object):
         parameters = {}
         if scope:
             parameters['scope'] = scope
+
+        for param in request.GET:
+            if param.startswith('auth_param_'):
+                try: parameters['auth_params'][param[11:]] = request.GET.get(param)
+                except KeyError:parameters['auth_params'] = {param[11:]: request.GET.get(param)}
+
+        if 'redirect_account_url' in request.GET:
+            request.session['redirect_account_url'] = request.GET['redirect_account_url']
+
         client = OAuthClient(request, app.key, app.secret,
                              self.adapter.request_token_url,
                              self.adapter.access_token_url,
                              self.adapter.authorize_url,
-                             callback_url,
+                             request.GET.get('callback_url', callback_url),
                              parameters=parameters)
         return client
 
@@ -84,6 +93,9 @@ class OAuthCallbackView(OAuthView):
             login.token = token
             login.state = SocialLogin.unmarshall_state \
                 (request.session.pop('oauth_login_state', None))
+            
+            login.redirect_account_url = request.session.get('redirect_account_url', None)
             return complete_social_login(request, login)
+            
         except OAuthError:
             return render_authentication_error(request)

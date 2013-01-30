@@ -108,6 +108,7 @@ class OAuthClient(object):
             self.access_token = dict(parse_qsl(content))
 
             self.request.session['oauth_%s_access_token' % get_token_prefix(self.request_token_url)] = self.access_token
+        
         return self.access_token
 
     def _get_rt_from_session(self):
@@ -121,8 +122,9 @@ class OAuthClient(object):
 
     def _get_authorization_url(self):
         request_token = self._get_request_token()
-        return '%s?oauth_token=%s&oauth_callback=%s' % (self.authorization_url,
-            request_token['oauth_token'], self.request.build_absolute_uri(self.callback_url))
+        auth_params = urllib.urlencode(self.parameters.get('auth_params', {}))
+        return '%s?oauth_token=%s&oauth_callback=%s%s' % (self.authorization_url,
+            request_token['oauth_token'], self.request.build_absolute_uri(self.callback_url), '&%s' % auth_params if auth_params else '')
 
     def is_valid(self):
         try:
