@@ -33,7 +33,10 @@ class ProviderAccount(object):
     
     def update_token(self, social_app, social_token):
         pass
-    
+
+    def request_url(self, url, args):
+        raise NotImplemented, 'request_url(url) for %s' % self.account.get_provider().id
+
     def get_token_args(self, app=None):
         social_app = app if app else SocialApp.objects.get_current(self.account.get_provider().id)
         try:
