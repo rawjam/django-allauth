@@ -8,11 +8,11 @@ from allauth.socialaccount import providers
 from allauth.socialaccount.providers.base import ProviderAccount
 from allauth.socialaccount.providers.oauth2.provider import OAuth2Provider
 from allauth.socialaccount.app_settings import QUERY_EMAIL
-from allauth.socialaccount.models import SocialApp
+from allauth.socialaccount.models import SocialApp, SocialToken
 
 from locale import get_default_locale_callable
 
-import urllib2, urlparse, datetime
+import urllib, urllib2, urlparse, datetime, json
 
 
 class FacebookAccount(ProviderAccount):
@@ -28,6 +28,19 @@ class FacebookAccount(ProviderAccount):
             'access_token': social_token.token,
         }
     
+    def request_url(self, url, args):
+        account = self.account
+        app = SocialApp.objects.get_current(self.account.get_provider().id)
+        tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
+        
+        if tokens:
+            token = tokens[0]
+            args.update(self.build_token_args(app, token))
+            request_url = '%s?%s' % (url, urllib.urlencode(args))
+            return json.load(urllib2.urlopen(request_url))
+        
+        return None
+
     def update_token(self, social_app, social_token):
         request_url = 'https://graph.facebook.com/oauth/access_token?client_id=%s&client_secret=%s&grant_type=fb_exchange_token&fb_exchange_token=%s' % (
             social_app.key, social_app.secret, social_token.token)
