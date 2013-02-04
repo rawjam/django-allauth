@@ -94,7 +94,7 @@ class OAuthCallbackView(OAuthView):
             login.state = SocialLogin.unmarshall_state \
                 (request.session.pop('oauth_login_state', None))
             
-            login.redirect_account_url = request.session.get('redirect_account_url', None)
+            login.redirect_account_url = request.session.pop('redirect_account_url', None)
             return complete_social_login(request, login)
             
         except OAuthError:

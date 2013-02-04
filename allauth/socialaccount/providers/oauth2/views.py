@@ -31,6 +31,9 @@ class OAuth2View(object):
         return view
 
     def get_client(self, request, app):
+        if 'redirect_account_url' in request.GET:
+            request.session['redirect_account_url'] = request.GET['redirect_account_url']
+
         callback_url = reverse(self.adapter.provider_id + "_callback")
         callback_url = request.build_absolute_uri(callback_url)
         client = OAuth2Client(self.request, app.key, app.secret,
@@ -70,6 +73,7 @@ class OAuth2CallbackView(OAuth2View):
             login.token = token
             login.state = SocialLogin.unmarshall_state(request.REQUEST
                                                        .get('state'))
+            login.redirect_account_url = request.session.pop('redirect_account_url', None)
             return complete_social_login(request, login)
         except OAuth2Error:
             return render_authentication_error(request)
