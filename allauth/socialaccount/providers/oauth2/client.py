@@ -25,6 +25,8 @@ class OAuth2Client(object):
 				self.extra_access_token_post_params = extra_access_token_post_params
 				self.state = None
 
+
+
 		def get_redirect_url(self):
 				params = {
 						'client_id': self.consumer_key,
@@ -32,6 +34,7 @@ class OAuth2Client(object):
 						'scope': self.scope,
 						'response_type': 'code'
 				}
+				params.update(self.extra_access_token_post_params)
 				if self.state:
 						params['state'] = self.state
 				return '%s?%s' % (self.authorization_url, urllib.urlencode(params))

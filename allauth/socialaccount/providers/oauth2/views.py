@@ -34,13 +34,18 @@ class OAuth2View(object):
         if 'redirect_account_url' in request.GET:
             request.session['redirect_account_url'] = request.GET['redirect_account_url']
 
+        parameters = {}
+        for param in request.GET:
+            if param.startswith('auth_param_'):
+                parameters[param[11:]] = request.GET.get(param)
+
         callback_url = reverse(self.adapter.provider_id + "_callback")
         callback_url = request.build_absolute_uri(callback_url)
         client = OAuth2Client(self.request, app.key, app.secret,
                               self.adapter.authorize_url,
                               self.adapter.access_token_url,
                               callback_url,
-                              self.adapter.get_provider().get_scope())
+                              self.adapter.get_provider().get_scope(), extra_access_token_post_params=parameters)
         return client
 
 
