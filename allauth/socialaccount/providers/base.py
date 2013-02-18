@@ -35,7 +35,10 @@ class ProviderAccount(object):
         pass
 
     def request_url(self, url, args):
-        raise NotImplemented, 'request_url(url) for %s' % self.account.get_provider().id
+        raise NotImplemented, 'request_url(url, args) for %s' % self.account.get_provider().id
+
+    def has_valid_authentication(self):
+        raise NotImplemented, 'has_valid_authentication() for %s' % self.account.get_provider().id
 
     def get_token_args(self, app=None):
         social_app = app if app else SocialApp.objects.get_current(self.account.get_provider().id)

@@ -4,7 +4,7 @@ from allauth.socialaccount.providers.oauth.provider import OAuthProvider
 from allauth.socialaccount.models import SocialApp, SocialToken
 
 import oauth2 as oauth
-import urllib, json
+import urllib, urllib2, json
 
 class TwitterAccount(ProviderAccount):
     def get_screen_name(self):
@@ -25,6 +25,25 @@ class TwitterAccount(ProviderAccount):
             # really documented, but seems to work.
             ret = profile_image_url.replace('_normal', '')
         return ret
+
+    def has_valid_authentication(self):
+        account = self.account
+        app = SocialApp.objects.get_current(self.account.get_provider().id)
+        tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
+        
+        if tokens:
+            token = tokens[0]
+            consumer = oauth.Consumer(key=app.key, secret=app.secret)
+            access_token = oauth.Token(key=token.token, secret=token.token_secret)
+            client = oauth.Client(consumer, access_token)
+            response, data = client.request('https://api.twitter.com/1.1/account/verify_credentials.json')
+            try:
+                response, data = client.request('%s?%s' % (url, urllib.urlencode(args)))
+                return True
+            except urllib2.HTTPError:
+                return False
+            
+        return False
 
     def request_url(self, url, args):
         account = self.account

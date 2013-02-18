@@ -23,6 +23,21 @@ class GoogleAccount(ProviderAccount):
     def get_avatar_url(self):
         return self.account.extra_data.get('picture')
     
+    def has_valid_authentication(self):
+        account = self.account
+        app = SocialApp.objects.get_current(self.account.get_provider().id)
+        tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
+        
+        if tokens:
+            token = tokens[0]
+            response = requests.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+                'client_id': app.key,
+                'client_secret': app.secret,
+                'access_token': token.token,            
+            })
+            return not ('error' in response.json or 'errors' in response.json)
+        return False
+
     def request_url(self, url, args):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)

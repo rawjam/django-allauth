@@ -70,6 +70,9 @@ class SocialAccount(models.Model):
     def __unicode__(self):
         return unicode(self.user)
 
+    def has_valid_authentication(self):
+        return self.get_provider_account().has_valid_authentication()
+
     def request_url(self, url, args):
         return self.get_provider_account().request_url(url, args)
 

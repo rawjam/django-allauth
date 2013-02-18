@@ -28,6 +28,22 @@ class FacebookAccount(ProviderAccount):
             'access_token': social_token.token,
         }
     
+    def has_valid_authentication(self):
+        account = self.account
+        app = SocialApp.objects.get_current(self.account.get_provider().id)
+        tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
+        
+        if tokens:
+            token = tokens[0]
+            args.update(self.build_token_args(app, token))
+            try:
+                response = json.load(urllib2.urlopen('http://graph.facebook.com/me?fields=id'))
+                return 'id' in response
+            except (urllib2.HTTPError, ValueError):
+                return False
+        
+        return False
+
     def request_url(self, url, args):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)
