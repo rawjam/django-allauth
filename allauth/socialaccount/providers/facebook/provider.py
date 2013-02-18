@@ -12,7 +12,7 @@ from allauth.socialaccount.models import SocialApp, SocialToken
 
 from locale import get_default_locale_callable
 
-import urllib, urllib2, urlparse, datetime, json
+import urllib, urllib2, urlparse, datetime, json, sys
 
 
 class FacebookAccount(ProviderAccount):
@@ -35,11 +35,13 @@ class FacebookAccount(ProviderAccount):
         
         if tokens:
             token = tokens[0]
+            args = {'fields': 'id'}
             args.update(self.build_token_args(app, token))
+            request_url = '%s?%s' % ('https://graph.facebook.com/me', urllib.urlencode(args))
             try:
-                response = json.load(urllib2.urlopen('http://graph.facebook.com/me?fields=id'))
+                response = json.load(urllib2.urlopen(request_url))
                 return 'id' in response
-            except (urllib2.HTTPError, ValueError):
+            except (urllib2.HTTPError, ValueError), e:
                 return False
         
         return False
@@ -70,7 +72,7 @@ class FacebookAccount(ProviderAccount):
                 social_token.save(expiry_date=expiry_date, updated=True)
                 
         except urllib2.HTTPError, e:
-            print 'Request URL:\n%s\n\nError:\n%s' % (request_url, e.read() or 'Unknown error')
+            sys.stdout('Request URL:\n%s\n\nError:\n%s' % (request_url, e.read() or 'Unknown error'))
 
     def __unicode__(self):
         dflt = super(FacebookAccount, self).__unicode__()

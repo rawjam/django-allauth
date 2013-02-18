@@ -36,9 +36,8 @@ class TwitterAccount(ProviderAccount):
             consumer = oauth.Consumer(key=app.key, secret=app.secret)
             access_token = oauth.Token(key=token.token, secret=token.token_secret)
             client = oauth.Client(consumer, access_token)
-            response, data = client.request('https://api.twitter.com/1.1/account/verify_credentials.json')
             try:
-                response, data = client.request('%s?%s' % (url, urllib.urlencode(args)))
+                response, data = client.request('https://api.twitter.com/1.1/account/verify_credentials.json')
                 return True
             except urllib2.HTTPError:
                 return False
