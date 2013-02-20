@@ -68,9 +68,10 @@ class OAuth2CallbackView(OAuth2View):
         app = self.adapter.get_provider().get_app(self.request)
         client = self.get_client(request, app)
         try:
-            access_token = client.get_access_token(request.GET['code'])
+            access_token, refresh_token = client.get_access_token(request.GET['code'])
             token = SocialToken(app=app,
-                                token=access_token)
+                                token=access_token,
+                                token_secret=refresh_token)
             login = self.adapter.complete_login(request, app, token)
             token.account = login.account
             login.token = token

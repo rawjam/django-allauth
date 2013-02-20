@@ -56,9 +56,11 @@ class OAuth2Client(object):
 								data = resp.json
 						else:
 								data = dict(urlparse.parse_qsl(resp.content))
+						
 						access_token = data.get('access_token')
+						refresh_token = data.get('refresh_token', None)
 				if not access_token:
 						raise OAuth2Error('Error retrieving access token: %s'
 															% resp.content)
 
-				return access_token
+				return access_token, refresh_token

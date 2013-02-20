@@ -23,7 +23,7 @@ class GoogleAccount(ProviderAccount):
     def get_avatar_url(self):
         return self.account.extra_data.get('picture')
     
-    def has_valid_authentication(self):
+    def has_valid_authentication(self, retry=True):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)
         tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
@@ -35,7 +35,16 @@ class GoogleAccount(ProviderAccount):
                 'client_secret': app.secret,
                 'access_token': token.token,            
             })
-            return not ('error' in response.json or 'errors' in response.json)
+            
+            if 'error' in response.json or 'errors' in response.json:
+                if retry:
+                    self.refresh_token()
+                    return self.has_valid_authentication(False)
+                else:
+                    return False
+            else:
+                return True
+        
         return False
 
     def request_url(self, url, args):
@@ -53,6 +62,25 @@ class GoogleAccount(ProviderAccount):
             response = requests.get(url, args)
             return response.json
         return None
+
+    def refresh_token(self):
+        account = self.account
+        app = SocialApp.objects.get_current(self.account.get_provider().id)
+        tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
+        
+        if tokens:
+            token = tokens[0]
+            
+            response = requests.post('https://accounts.google.com/o/oauth2/token', {
+                'client_id': app.key,
+                'client_secret': app.secret,
+                'refresh_token': token.token_secret,
+                'grant_type': 'refresh_token'
+            })
+            
+            if 'access_token' in response.json:
+                token.token = response.json['access_token']
+                token.save()
 
     def __unicode__(self):
         dflt = super(GoogleAccount, self).__unicode__()
