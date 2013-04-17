@@ -118,8 +118,8 @@ class SocialAccount(models.Model):
 class SocialToken(models.Model):
     app = models.ForeignKey(SocialApp)
     account = models.ForeignKey(SocialAccount)
-    token = models.CharField(max_length=200)
-    token_secret = models.CharField(max_length=200, blank=True)
+    token = models.CharField(max_length=500)
+    token_secret = models.CharField(max_length=500, blank=True)
     expiry_date = models.DateTimeField(null=True, blank=True)
 
     class Meta:
