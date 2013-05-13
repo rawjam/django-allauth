@@ -55,10 +55,10 @@ class FacebookAccount(ProviderAccount):
             token = tokens[0]
             args.update(self.build_token_args(app, token))
             request_url = '%s?%s' % (url, urllib.urlencode(args))
-            response = urllib2.urlopen(request_url)
+            response = urllib2.urlopen(request_url).read()
             
-            if callback: callback(request_url, response.read())
-            return json.load(response)
+            if callback: callback(request_url, response)
+            return json.loads(response if response else '[]')
         
         return None
 
