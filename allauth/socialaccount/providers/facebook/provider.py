@@ -57,7 +57,7 @@ class FacebookAccount(ProviderAccount):
             request_url = '%s?%s' % (url, urllib.urlencode(args))
             response = urllib2.urlopen(request_url)
             
-            if callback: callback(request_url, response)
+            if callback: callback(request_url, response.read())
             return json.load(response)
         
         return None
