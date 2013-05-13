@@ -44,7 +44,7 @@ class TwitterAccount(ProviderAccount):
             
         return False
 
-    def request_url(self, url, args):
+    def request_url(self, url, args, callback=None):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)
         tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
@@ -54,7 +54,10 @@ class TwitterAccount(ProviderAccount):
             consumer = oauth.Consumer(key=app.key, secret=app.secret)
             access_token = oauth.Token(key=token.token, secret=token.token_secret)
             client = oauth.Client(consumer, access_token)
-            response, data = client.request('%s?%s' % (url, urllib.urlencode(args)))
+            full_url = '%s?%s' % (url, urllib.urlencode(args))
+            response, data = client.request(full_url)
+            
+            if callback: callback(full_url, data)
             return json.loads(data)
         return None
 

@@ -34,7 +34,7 @@ class ProviderAccount(object):
     def update_token(self, social_app, social_token):
         pass
 
-    def request_url(self, url, args):
+    def request_url(self, url, args, callback=None):
         raise NotImplemented, 'request_url(url, args) for %s' % self.account.get_provider().id
 
     def has_valid_authentication(self):

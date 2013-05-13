@@ -46,7 +46,7 @@ class FacebookAccount(ProviderAccount):
         
         return False
 
-    def request_url(self, url, args):
+    def request_url(self, url, args, callback=None):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)
         tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
@@ -55,7 +55,10 @@ class FacebookAccount(ProviderAccount):
             token = tokens[0]
             args.update(self.build_token_args(app, token))
             request_url = '%s?%s' % (url, urllib.urlencode(args))
-            return json.load(urllib2.urlopen(request_url))
+            response = urllib2.urlopen(request_url)
+            
+            if callback: callback(request_url, response)
+            return json.load(response)
         
         return None
 

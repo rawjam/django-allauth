@@ -47,7 +47,7 @@ class GoogleAccount(ProviderAccount):
         
         return False
 
-    def request_url(self, url, args):
+    def request_url(self, url, args, callback=None):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)
         tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
@@ -60,6 +60,8 @@ class GoogleAccount(ProviderAccount):
                 'access_token': token.token,
             })
             response = requests.get(url, args)
+            
+            if callback: callback(url, response.content)
             return response.json
         return None
 
