@@ -5,6 +5,8 @@ Inspired by:
     http://github.com/facebook/tornado/blob/master/tornado/auth.py
 """
 
+from django.conf import settings
+
 import urllib
 import urllib2
 
@@ -65,6 +67,13 @@ class OAuthClient(object):
         self.errors = []
         self.request_token = None
         self.access_token = None
+        
+        self.force_https = False
+        
+        try:
+            self.force_https = settings.FORCE_USE_HTTPS
+        except AttributeError:
+            pass
 
     def _get_request_token(self):
         """
@@ -77,6 +86,8 @@ class OAuthClient(object):
                 get_params.update(self.parameters)
             get_params['oauth_callback'] \
                 = self.request.build_absolute_uri(self.callback_url)
+            if self.force_https:
+                get_params['oauth_callback'] = get_params['oauth_callback'].replace('http://', 'https://')
             rt_url = self.request_token_url + '?' + urllib.urlencode(get_params)
             response, content = self.client.request(rt_url, "GET")
             if response['status'] != '200':
@@ -123,8 +134,12 @@ class OAuthClient(object):
     def _get_authorization_url(self):
         request_token = self._get_request_token()
         auth_params = urllib.urlencode(self.parameters.get('auth_params', {}))
+        if self.force_https:
+            callback = self.request.build_absolute_uri(self.callback_url).replace('http://', 'https://')
+        else:
+            callback = self.request.build_absolute_uri(self.callback_url)
         return '%s?oauth_token=%s&oauth_callback=%s%s' % (self.authorization_url,
-            request_token['oauth_token'], self.request.build_absolute_uri(self.callback_url), '&%s' % auth_params if auth_params else '')
+            request_token['oauth_token'], callback, '&%s' % auth_params if auth_params else '')
 
     def is_valid(self):
         try:
