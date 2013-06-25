@@ -1,3 +1,5 @@
+from django.conf import settings
+
 import urllib
 import urlparse
 
@@ -24,9 +26,14 @@ class OAuth2Client(object):
 				self.scope = ' '.join(scope)
 				self.extra_access_token_post_params = extra_access_token_post_params
 				self.state = None
-
-
-
+				self.force_https = False
+				
+				try:
+					self.force_https = settings.FORCE_USE_HTTPS
+					self.callback_url = self.callback_url.replace('http://', 'https://')
+				except AttributeError:
+					pass
+				
 		def get_redirect_url(self):
 				params = {
 						'client_id': self.consumer_key,
