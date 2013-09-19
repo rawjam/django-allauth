@@ -30,7 +30,7 @@ class PasswordField(forms.CharField):
 
     def __init__(self, *args, **kwargs):
         is_primary_password = kwargs.pop('is_primary_password', None)
-        placeholder =_('Password') if is_primary_password else _('Confirm p')
+        placeholder =_('Password') if is_primary_password else _('Confirm password')
         render_value = kwargs.pop('render_value',
                                   app_settings.PASSWORD_INPUT_RENDER_VALUE)
         kwargs['widget'] = forms.PasswordInput(render_value=render_value,
