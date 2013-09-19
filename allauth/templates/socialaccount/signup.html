@@ -10,7 +10,7 @@
 	<p class="lead">{% blocktrans with provider_name=account.get_provider.name site_name=site.name %}You are about to use your {{provider_name}} account to login to
 	{{site_name}}. As a final step, please complete the following:{% endblocktrans %}</p>
 
-	<form action="{% url 'socialaccount_signup' %}" method="POST" id="signup_form" class="form-horizontal">{% csrf_token %}
+	<form action="{% url 'socialaccount_signup' %}" method="POST" id="signup_form">{% csrf_token %}
 		<fieldset>
 			{% render_form form %}
 
