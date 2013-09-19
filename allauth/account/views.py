@@ -89,20 +89,20 @@ def signup(request, **kwargs):
 
 
 class ConfirmEmailView(TemplateResponseMixin, View):
-    
+
     messages = {
         "email_confirmed": {
             "level": messages.SUCCESS,
-            "text": _("You have confirmed %(email)s.")
+            "text": _("Thank you for confirming your email address. You can now login and start using Updatey :)")
         }
     }
-    
+
     def get_template_names(self):
         return {
             "GET": ["account/email_confirm.html"],
             "POST": ["account/email_confirmed.html"],
         }[self.request.method]
-    
+
     def get(self, *args, **kwargs):
         try:
             self.object = self.get_object()
@@ -110,7 +110,7 @@ class ConfirmEmailView(TemplateResponseMixin, View):
             self.object = None
         ctx = self.get_context_data()
         return self.render_to_response(ctx)
-    
+
     def post(self, *args, **kwargs):
         self.object = confirmation = self.get_object()
         confirmation.confirm()
@@ -133,7 +133,7 @@ class ConfirmEmailView(TemplateResponseMixin, View):
                 }
             )
         return redirect(redirect_url)
-    
+
     def get_object(self, queryset=None):
         if queryset is None:
             queryset = self.get_queryset()
@@ -141,17 +141,17 @@ class ConfirmEmailView(TemplateResponseMixin, View):
             return queryset.get(key=self.kwargs["key"].lower())
         except EmailConfirmation.DoesNotExist:
             raise Http404()
-    
+
     def get_queryset(self):
         qs = EmailConfirmation.objects.all_valid()
         qs = qs.select_related("email_address__user")
         return qs
-    
+
     def get_context_data(self, **kwargs):
         ctx = kwargs
         ctx["confirmation"] = self.object
         return ctx
-    
+
     def get_redirect_url(self):
         return get_adapter().get_email_confirmation_redirect_url(self.request)
 
@@ -167,11 +167,11 @@ def email(request, **kwargs):
             add_email_form = form_class(request.user, request.POST)
             if add_email_form.is_valid():
                 email_address = add_email_form.save(request)
-                messages.add_message(request, messages.INFO,
-                    ugettext(u"Confirmation e-mail sent to %(email)s") % {
-                            "email": add_email_form.cleaned_data["email"]
-                        }
-                    )
+                #messages.add_message(request, messages.INFO,
+                #    ugettext(u"Confirmation e-mail sent to %(email)s") % {
+                #            "email": add_email_form.cleaned_data["email"]
+                #        }
+                #    )
                 signals.email_added.send(sender=request.user.__class__,
                         request=request, user=request.user,
                         email_address=email_address)
@@ -186,11 +186,11 @@ def email(request, **kwargs):
                             user=request.user,
                             email=email,
                         )
-                        messages.add_message(request, messages.INFO,
-                            ugettext("Confirmation e-mail sent to %(email)s") % {
-                                "email": email,
-                            }
-                        )
+                        #messages.add_message(request, messages.INFO,
+                        #    ugettext("Confirmation e-mail sent to %(email)s") % {
+                        #        "email": email,
+                        #    }
+                        #)
                         email_address.send_confirmation(request)
                         return HttpResponseRedirect(reverse('account_email'))
                     except EmailAddress.DoesNotExist:
@@ -341,7 +341,7 @@ def password_reset_ajax(request, **kwargs):
 
     data = { 'fragments' : {"#reset-form": msg}}
     return http.HttpResponse(json.dumps(data), mimetype="application/json")
-    
+
 def password_reset_done(request, **kwargs):
 
     return render_to_response(kwargs.pop("template_name", "account/password_reset_done.html"), RequestContext(request, {}))

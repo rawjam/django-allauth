@@ -2,24 +2,25 @@
 
 {% load i18n common_tags %}
 
-{% block head_title %}{% trans "Sign Up" %}{% endblock %}
-{% block page_title %}{% trans "Sign Up" %}{% endblock %}
+{% block head_title %}{% trans "Almost there..." %}{% endblock %}
+{% block page_title %}{% trans "Almost there..." %}{% endblock %}
 
 {% block content %}
 
-  <p class="lead">{% blocktrans with provider_name=account.get_provider.name site_name=site.name %}You are about to use your {{provider_name}} account to login to 
-  {{site_name}}. As a final step, please complete the following form:{% endblocktrans %}</p>
-      
-  <form action="{% url socialaccount_signup %}" method="POST" id="signup_form">{% csrf_token %}
-    <fieldset>
-      {% render_form form %}
-      {% if redirect_field_value %}
-      <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-      {% endif %}
-      <div class="form-actions">
-        <button type="submit" class="btn btn-primary">{% trans "Sign Up" %}</button>
-      </div>
-    </fieldset>
-  </form>
+	<p class="lead">{% blocktrans with provider_name=account.get_provider.name site_name=site.name %}You are about to use your {{provider_name}} account to login to
+	{{site_name}}. As a final step, please complete the following:{% endblocktrans %}</p>
+
+	<form action="{% url 'socialaccount_signup' %}" method="POST" id="signup_form" class="form-horizontal">{% csrf_token %}
+		<fieldset>
+			{% render_form form %}
+
+			{% if redirect_field_value %}
+				<input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+			{% endif %}
+			<div class="form-actions">
+				<button type="submit" class="btn btn-lg">{% trans "Sign Up" %}</button>
+			</div>
+		</fieldset>
+	</form>
 
 {% endblock %}

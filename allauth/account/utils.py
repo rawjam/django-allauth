@@ -96,8 +96,8 @@ def perform_login(request, user, redirect_url=None):
     # to set up authentication backends in settings.py
     if not hasattr(user, 'backend'):
         user.backend = "django.contrib.auth.backends.ModelBackend"
-    signals.user_logged_in.send(sender=user.__class__, 
-                                request=request, 
+    signals.user_logged_in.send(sender=user.__class__,
+                                request=request,
                                 user=user)
     login(request, user)
     messages.add_message(request, messages.SUCCESS,
@@ -109,8 +109,8 @@ def perform_login(request, user, redirect_url=None):
 
 
 def complete_signup(request, user, success_url):
-    signals.user_signed_up.send(sender=user.__class__, 
-                                request=request, 
+    signals.user_signed_up.send(sender=user.__class__,
+                                request=request,
                                 user=user)
     return perform_login(request, user, redirect_url=success_url)
 
@@ -150,7 +150,7 @@ def send_email_confirmation(request, user):
 
     COOLDOWN_PERIOD = timedelta(minutes=3)
     email = user.email
-    if (email 
+    if (email
         and app_settings.EMAIL_VERIFICATION != EmailVerificationMethod.NONE):
         try:
             email_address = EmailAddress.objects.get(user=user,
@@ -166,15 +166,15 @@ def send_email_confirmation(request, user):
                 email_confirmation_sent = True
         except EmailAddress.DoesNotExist:
             email_address = EmailAddress.objects.add_email(request,
-                                                           user, 
-                                                           user.email, 
+                                                           user,
+                                                           user.email,
                                                            confirm=True)
             assert email_address
             email_confirmation_sent = False
-        if not email_confirmation_sent:
-            messages.info(request,
-                _(u"Confirmation e-mail sent to %(email)s") % {"email": email}
-            )
+        #if not email_confirmation_sent:
+        #    messages.info(request,
+        #        _(u"Confirmation e-mail sent to %(email)s") % {"email": email}
+        #    )
 
 def sync_user_email_addresses(user):
     """

@@ -21,7 +21,7 @@ class SocialAppManager(models.Manager):
 class SocialApp(models.Model):
     objects = SocialAppManager()
 
-    provider = models.CharField(max_length=30, 
+    provider = models.CharField(max_length=30,
                                 choices=providers.registry.as_choices())
     name = models.CharField(max_length=40)
     key = models.CharField(max_length=100,
@@ -94,7 +94,7 @@ class SocialAccount(models.Model):
     def sync(self, data):
         # FIXME: to be refactored when provider classes are introduced
         if self.provider == 'facebook':
-            self.extra_data = { 'link': data['facebook_me']['link'], 
+            self.extra_data = { 'link': data['facebook_me']['link'],
                                 'name': data['facebook_me']['name'] }
             self.save()
             access_token = data['facebook_access_token']
@@ -119,7 +119,7 @@ class SocialToken(models.Model):
     app = models.ForeignKey(SocialApp)
     account = models.ForeignKey(SocialAccount)
     token = models.CharField(max_length=500)
-    token_secret = models.CharField(max_length=500, blank=True)
+    token_secret = models.CharField(max_length=500, null=True, blank=True)
     expiry_date = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -189,7 +189,7 @@ class SocialLogin(object):
         """
         assert not self.is_existing
         try:
-            a = SocialAccount.objects.get(provider=self.account.provider, 
+            a = SocialAccount.objects.get(provider=self.account.provider,
                                           uid=self.account.uid)
             # Update account
             a.extra_data = self.account.extra_data
@@ -210,13 +210,13 @@ class SocialLogin(object):
                     self.token.save()
         except SocialAccount.DoesNotExist:
             pass
-    
+
     def get_redirect_url(self, request, fallback=True):
         if fallback and type(fallback) == bool:
             fallback = get_adapter().get_login_redirect_url(request)
         url = self.state.get('next') or fallback
         return url
-            
+
     @classmethod
     def state_from_request(cls, request):
         state = {}
@@ -229,7 +229,7 @@ class SocialLogin(object):
     def marshall_state(cls, request):
         state = cls.state_from_request(request)
         return simplejson.dumps(state)
-    
+
     @classmethod
     def unmarshall_state(cls, state_string):
         if state_string:
@@ -237,5 +237,5 @@ class SocialLogin(object):
         else:
             state = {}
         return state
-    
-            
+
+

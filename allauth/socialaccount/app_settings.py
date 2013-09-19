@@ -3,7 +3,7 @@ from django.conf import settings
 from allauth.account import app_settings as account_settings
 
 # Request e-mail address from 3rd party account provider? E.g. OpenID AX
-QUERY_EMAIL = getattr(settings, "SOCIALACCOUNT_QUERY_EMAIL", 
+QUERY_EMAIL = getattr(settings, "SOCIALACCOUNT_QUERY_EMAIL",
                       account_settings.EMAIL_REQUIRED)
 
 # Attempt to bypass the signup form by using fields (e.g. username,
@@ -19,3 +19,6 @@ AVATAR_SUPPORT = getattr(settings, "SOCIALACCOUNT_AVATAR_SUPPORT",
 
 # Provider specific settings
 PROVIDERS = getattr(settings, "SOCIALACCOUNT_PROVIDERS", {})
+
+# Do we want to verify emails for social accounts (irrespective of whether we're doing that for users manually signing up)
+EMAIL_VERIFICATION = getattr(settings, "SOCIALACCOUNT_EMAIL_VERIFICATION", {})
