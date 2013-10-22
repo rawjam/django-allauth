@@ -4,6 +4,7 @@ from django.contrib.sites.models import Site
 from django.core.mail import send_mail
 
 from allauth.utils import import_attribute
+from rawjam.core.utils.comms import send_templated_email
 
 import app_settings
 
@@ -36,14 +37,14 @@ class DefaultAccountAdapter(object):
         Sends an e-mail to `email`.  `template_prefix` identifies the
         e-mail that is to be sent, e.g. "account/email/email_confirmation"
         """
-        subject = render_to_string('{0}_subject.txt'.format(template_prefix),
-                                   context)
-        body = render_to_string('{0}_message.txt'.format(template_prefix),
-                                context).strip()
-        # remove superfluous line breaks
+        subject = render_to_string('{0}_subject.txt'.format(template_prefix), context)
         subject = " ".join(subject.splitlines()).strip()
         subject = self.format_email_subject(subject)
-        send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [email])
+
+        template_name = '%s_message.txt' % template_prefix
+        context['settings'] = settings
+
+        send_templated_email(template_name, context, subject, [email], [])
 
     def get_login_redirect_url(self, request):
         """

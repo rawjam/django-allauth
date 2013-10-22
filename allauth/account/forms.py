@@ -229,7 +229,6 @@ class BaseSignupForm(_base_signup_form_class()):
         if app_settings.USERNAME_REQUIRED:
             user.username = self.cleaned_data["username"]
         else:
-            print "----", user.username
             user.username = generate_unique_username(user.username or
                                                      user.first_name or
                                                      user.last_name or
