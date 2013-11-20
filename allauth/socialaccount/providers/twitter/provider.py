@@ -44,7 +44,7 @@ class TwitterAccount(ProviderAccount):
             
         return False
 
-    def request_url(self, url, args, callback=None):
+    def request_url(self, url, args={}, callback=None):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)
         tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')

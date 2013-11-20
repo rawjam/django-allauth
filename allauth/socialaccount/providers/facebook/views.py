@@ -8,7 +8,7 @@ from allauth.socialaccount import providers
 from allauth.socialaccount.providers.oauth2.views import (OAuth2Adapter,
                                                           OAuth2LoginView,
                                                           OAuth2CallbackView)
-from allauth.socialaccount import requests
+from allauth.socialaccount import social_requests as requests
 
 from forms import FacebookConnectForm
 from provider import FacebookProvider

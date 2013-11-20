@@ -5,37 +5,33 @@ from allauth.socialaccount import social_requests as requests
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.utils import get_user_model
 
-from provider import SoundCloudProvider
+from provider import TeamboxProvider
 
 User = get_user_model()
 
-class SoundCloudOAuth2Adapter(OAuth2Adapter):
-    provider_id = SoundCloudProvider.id
-    access_token_url = 'https://api.soundcloud.com/oauth2/token'
-    authorize_url = 'https://soundcloud.com/connect'
-    profile_url = 'https://api.soundcloud.com/me.json'
+class TeamboxOAuth2Adapter(OAuth2Adapter):
+    provider_id = TeamboxProvider.id
+    access_token_url = 'https://teambox.com/oauth/token'
+    authorize_url = 'https://teambox.com/oauth/authorize'
+    profile_url = 'https://teambox.com/api/1/account'
 
     def complete_login(self, request, app, token):
         resp = requests.get(self.profile_url,
-                            params={ 'oauth_token': token.token })
+                            params={ 'access_token': token.token })
         extra_data = resp.json
         uid = str(extra_data['id'])
-        name_parts = extra_data.get('full_name', '').split(' ', 1)
-        if len(name_parts) == 2:
-            first_name, last_name = name_parts
-        else:
-            first_name, last_name = name_parts[0], ''
-        user_kwargs = {'first_name': first_name, 
-                       'last_name': last_name}
         user = User(username=extra_data.get('username', ''),
                     email=extra_data.get('email', ''),
-                    **user_kwargs)
+                    first_name=extra_data.get('first_name', ''),
+                    last_name=extra_data.get('last_name', ''),
+                    )
         account = SocialAccount(user=user,
                                 uid=uid,
                                 extra_data=extra_data,
                                 provider=self.provider_id)
         return SocialLogin(account)
 
-oauth2_login = OAuth2LoginView.adapter_view(SoundCloudOAuth2Adapter)
-oauth2_callback = OAuth2CallbackView.adapter_view(SoundCloudOAuth2Adapter)
+
+oauth2_login = OAuth2LoginView.adapter_view(TeamboxOAuth2Adapter)
+oauth2_callback = OAuth2CallbackView.adapter_view(TeamboxOAuth2Adapter)
 

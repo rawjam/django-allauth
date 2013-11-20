@@ -3,7 +3,7 @@ from allauth.socialaccount.providers.base import ProviderAccount
 from allauth.socialaccount.providers.oauth2.provider import OAuth2Provider
 from allauth.socialaccount.app_settings import QUERY_EMAIL, PROVIDERS
 from allauth.socialaccount.models import SocialApp, SocialToken
-from allauth.socialaccount import requests
+from allauth.socialaccount import social_requests as requests
 
 import oauth2 as oauth
 import urllib, json
@@ -47,7 +47,7 @@ class GoogleAccount(ProviderAccount):
         
         return False
 
-    def request_url(self, url, args, callback=None):
+    def request_url(self, url, args={}, callback=None):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)
         tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')

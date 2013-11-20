@@ -73,7 +73,7 @@ class SocialAccount(models.Model):
     def has_valid_authentication(self):
         return self.get_provider_account().has_valid_authentication()
 
-    def request_url(self, url, args, callback=None):
+    def request_url(self, url, args={}, callback=None):
         return self.get_provider_account().request_url(url, args, callback)
 
     def get_profile_url(self):

@@ -3,7 +3,7 @@ from django.conf import settings
 import urllib
 import urlparse
 
-from allauth.socialaccount import requests
+from allauth.socialaccount import social_requests as requests
 
 class OAuth2Error(Exception):
 		pass

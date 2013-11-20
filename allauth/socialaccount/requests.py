@@ -34,11 +34,11 @@ def _mockable_request(f):
     return new_f
     
 @_mockable_request
-def get(url, params={}):
+def get(url, params={}, disable_ssl_certificate_validation=False):
     global _mocked_responses
     if _mocked_responses:
         return _mocked_responses.pop(0)
-    client = httplib2.Http()
+    client = httplib2.Http(disable_ssl_certificate_validation=disable_ssl_certificate_validation)
     query = urllib.urlencode(params)
     if query:
         url += '?' + query
