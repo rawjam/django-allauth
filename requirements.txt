@@ -3,3 +3,4 @@ oauth2
 python-openid
 django-email-confirmation
 -e git://github.com/pythonforfacebook/facebook-sdk.git#egg=facebook-sdk
+certifi

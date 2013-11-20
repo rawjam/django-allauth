@@ -3,7 +3,7 @@ from django.conf import settings
 import urllib
 import urlparse
 
-from allauth.socialaccount import social_requests as requests
+from allauth.socialaccount import requests
 
 class OAuth2Error(Exception):
 		pass
@@ -27,13 +27,13 @@ class OAuth2Client(object):
 				self.extra_access_token_post_params = extra_access_token_post_params
 				self.state = None
 				self.force_https = False
-				
+
 				try:
 					self.force_https = settings.FORCE_USE_HTTPS
 					self.callback_url = self.callback_url.replace('http://', 'https://')
 				except AttributeError:
 					pass
-				
+
 		def get_redirect_url(self):
 				params = {
 						'client_id': self.consumer_key,
@@ -63,7 +63,7 @@ class OAuth2Client(object):
 								data = resp.json
 						else:
 								data = dict(urlparse.parse_qsl(resp.content))
-						
+
 						access_token = data.get('access_token')
 						refresh_token = data.get('refresh_token', None)
 				if not access_token:

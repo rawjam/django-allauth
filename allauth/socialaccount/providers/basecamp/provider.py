@@ -9,7 +9,7 @@ import urllib, urllib2, json, certifi
 
 class BasecampAccount(ProviderAccount):
 	BASE_URL = 'https://basecamp.com/api/v1'
-	
+
 	def get_profile_url(self):
 		return '%s/people/me.json' % self.BASE_URL
 
@@ -21,18 +21,18 @@ class BasecampAccount(ProviderAccount):
 		app = SocialApp.objects.get_current(self.account.get_provider().id)
 		tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
 
-		
+
 		if tokens:
 			token = tokens[0]
 			consumer = oauth.Consumer(key=app.key, secret=app.secret)
 			access_token = oauth.Token(key=token.token, secret=token.token_secret)
 			client = oauth.Client(consumer, access_token)
 			client.ca_certs = certifi.where()
-			
+
 			if not 'http' in url:
 				url = '%s%s' % (self.BASE_URL, url)
 			response, data = client.request(url)
-			
+
 			if callback: callback(url, data)
 			return json.loads(data)
 		return None

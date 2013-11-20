@@ -2,7 +2,7 @@ import urllib
 import httplib2
 from django.utils import simplejson
 
-from allauth.socialaccount import social_requests as requests
+from allauth.socialaccount import requests
 from allauth.socialaccount.models import SocialLogin, SocialAccount
 from allauth.socialaccount.providers.oauth2.views import (OAuth2Adapter,
 														  OAuth2LoginView,

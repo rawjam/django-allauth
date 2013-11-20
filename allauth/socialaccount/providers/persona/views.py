@@ -1,6 +1,6 @@
 from allauth.socialaccount.helpers import complete_social_login
 from allauth.socialaccount.helpers import render_authentication_error
-from allauth.socialaccount import social_requests as requests
+from allauth.socialaccount import requests
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.utils import get_user_model
 
@@ -10,7 +10,7 @@ User = get_user_model()
 
 def persona_login(request):
     assertion = request.POST.get('assertion', '')
-    audience = request.build_absolute_uri('/') 
+    audience = request.build_absolute_uri('/')
     resp = requests.post('https://verifier.login.persona.org/verify',
                          { 'assertion': assertion,
                            'audience': audience })

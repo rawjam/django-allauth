@@ -1,7 +1,7 @@
 from allauth.socialaccount.providers.oauth2.views import (OAuth2Adapter,
                                                           OAuth2LoginView,
                                                           OAuth2CallbackView)
-from allauth.socialaccount import social_requests as requests
+from allauth.socialaccount import requests
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.utils import get_user_model
 
@@ -25,7 +25,7 @@ class SoundCloudOAuth2Adapter(OAuth2Adapter):
             first_name, last_name = name_parts
         else:
             first_name, last_name = name_parts[0], ''
-        user_kwargs = {'first_name': first_name, 
+        user_kwargs = {'first_name': first_name,
                        'last_name': last_name}
         user = User(username=extra_data.get('username', ''),
                     email=extra_data.get('email', ''),

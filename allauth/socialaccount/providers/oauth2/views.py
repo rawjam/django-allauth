@@ -22,7 +22,7 @@ class OAuth2Adapter(object):
 
 class OAuth2View(object):
 	parameters = {}
-	
+
 	@classmethod
 	def adapter_view(cls, adapter):
 		def view(request, *args, **kwargs):
@@ -81,5 +81,6 @@ class OAuth2CallbackView(OAuth2View):
 													   .get('state'))
 			login.redirect_account_url = request.session.pop('redirect_account_url', None)
 			return complete_social_login(request, login)
-		except OAuth2Error:
+		except OAuth2Error, e:
+			print e
 			return render_authentication_error(request)

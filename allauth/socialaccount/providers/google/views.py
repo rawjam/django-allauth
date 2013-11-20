@@ -2,7 +2,7 @@ from allauth.socialaccount.providers.oauth2.views import (OAuth2Adapter,
                                                           OAuth2LoginView,
                                                           OAuth2CallbackView)
 
-from allauth.socialaccount import social_requests as requests
+from allauth.socialaccount import requests
 from allauth.socialaccount.models import SocialLogin, SocialAccount
 from allauth.utils import get_user_model
 
@@ -22,13 +22,13 @@ class GoogleOAuth2Adapter(OAuth2Adapter):
                               'alt': 'json' })
         extra_data = resp.json
         # extra_data is something of the form:
-        # 
-        # {u'family_name': u'Penners', u'name': u'Raymond Penners', 
-        #  u'picture': u'https://lh5.googleusercontent.com/-GOFYGBVOdBQ/AAAAAAAAAAI/AAAAAAAAAGM/WzRfPkv4xbo/photo.jpg', 
-        #  u'locale': u'nl', u'gender': u'male', 
-        #  u'email': u'raymond.penners@gmail.com', 
-        #  u'link': u'https://plus.google.com/108204268033311374519', 
-        #  u'given_name': u'Raymond', u'id': u'108204268033311374519', 
+        #
+        # {u'family_name': u'Penners', u'name': u'Raymond Penners',
+        #  u'picture': u'https://lh5.googleusercontent.com/-GOFYGBVOdBQ/AAAAAAAAAAI/AAAAAAAAAGM/WzRfPkv4xbo/photo.jpg',
+        #  u'locale': u'nl', u'gender': u'male',
+        #  u'email': u'raymond.penners@gmail.com',
+        #  u'link': u'https://plus.google.com/108204268033311374519',
+        #  u'given_name': u'Raymond', u'id': u'108204268033311374519',
         #  u'verified_email': True}
         #
         # TODO: We could use verified_email to bypass allauth email verification
