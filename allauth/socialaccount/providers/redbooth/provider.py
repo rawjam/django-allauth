@@ -5,8 +5,8 @@ from allauth.socialaccount.models import SocialApp, SocialToken
 from allauth.socialaccount import requests
 
 
-class TeamboxAccount(ProviderAccount):
-	BASE_URL = 'https://teambox.com/api/1'
+class RedboothAccount(ProviderAccount):
+	BASE_URL = 'https://redbooth.com/api/1'
 
 	def get_profile_url(self):
 		return '%s/account' % self.BASE_URL
@@ -34,18 +34,18 @@ class TeamboxAccount(ProviderAccount):
 
 
 	def __unicode__(self):
-		dflt = super(TeamboxAccount, self).__unicode__()
+		dflt = super(RedboothAccount, self).__unicode__()
 		return self.account.extra_data.get('username', dflt)
 
 
-class TeamboxProvider(OAuth2Provider):
-	id = 'teambox'
-	name = 'Teambox'
-	package = 'allauth.socialaccount.providers.teambox'
-	account_class = TeamboxAccount
+class RedboothProvider(OAuth2Provider):
+	id = 'redbooth'
+	name = 'Redbooth'
+	package = 'allauth.socialaccount.providers.redbooth'
+	account_class = RedboothAccount
 
 	def get_default_scope(self):
 		scope = ['read_projects', 'offline_access']
 		return scope
 
-providers.registry.register(TeamboxProvider)
+providers.registry.register(RedboothProvider)

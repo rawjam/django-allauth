@@ -5,15 +5,15 @@ from allauth.socialaccount import requests
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.utils import get_user_model
 
-from provider import TeamboxProvider
+from provider import RedboothProvider
 
 User = get_user_model()
 
-class TeamboxOAuth2Adapter(OAuth2Adapter):
-    provider_id = TeamboxProvider.id
-    access_token_url = 'https://teambox.com/oauth/token'
-    authorize_url = 'https://teambox.com/oauth/authorize'
-    profile_url = 'https://teambox.com/api/1/account'
+class RedboothOAuth2Adapter(OAuth2Adapter):
+    provider_id = RedboothProvider.id
+    access_token_url = 'https://redbooth.com/oauth/token'
+    authorize_url = 'https://redbooth.com/oauth/authorize'
+    profile_url = 'https://redbooth.com/api/1/account'
 
     def complete_login(self, request, app, token):
         resp = requests.get(self.profile_url,
@@ -32,6 +32,5 @@ class TeamboxOAuth2Adapter(OAuth2Adapter):
         return SocialLogin(account)
 
 
-oauth2_login = OAuth2LoginView.adapter_view(TeamboxOAuth2Adapter)
-oauth2_callback = OAuth2CallbackView.adapter_view(TeamboxOAuth2Adapter)
-
+oauth2_login = OAuth2LoginView.adapter_view(RedboothOAuth2Adapter)
+oauth2_callback = OAuth2CallbackView.adapter_view(RedboothOAuth2Adapter)
