@@ -26,7 +26,7 @@ class RedboothAccount(ProviderAccount):
 			})
 
 			url = '%s%s' % (self.BASE_URL, url)
-			response = requests.get(url, args)
+			response = requests.get(url, args, True)
 
 			if callback: callback(url, response.content)
 			return response.json
