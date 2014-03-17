@@ -7,12 +7,12 @@ class Response(object):
         self.content = content
         self.headers = headers
 
-    @classmethod 
+    @classmethod
     def from_httplib(cls, resp, content):
         return Response(resp.status,
                         content,
                         headers=dict(resp.iteritems()))
-    
+
 
     @property
     def json(self):
@@ -32,7 +32,7 @@ def _mockable_request(f):
             return _mocked_responses.pop(0)
         return f(*args, **kwargs)
     return new_f
-    
+
 @_mockable_request
 def get(url, params={}, disable_ssl_certificate_validation=False):
     global _mocked_responses
@@ -46,12 +46,10 @@ def get(url, params={}, disable_ssl_certificate_validation=False):
     return Response.from_httplib(resp, content)
 
 @_mockable_request
-def post(url, params):
-    client = httplib2.Http()
+def post(url, params, disable_ssl_certificate_validation=False):
+    client = httplib2.Http(disable_ssl_certificate_validation=disable_ssl_certificate_validation)
     headers = { 'content-type': 'application/x-www-form-urlencoded' }
     resp, content = client.request(url, 'POST',
                                    body=urllib.urlencode(params),
                                    headers=headers)
     return Response.from_httplib(resp, content)
-
-
