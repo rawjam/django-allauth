@@ -56,7 +56,7 @@ class OAuth2Client(object):
 				params = dict(params.items() + self.extra_access_token_post_params.items())
 				url = self.access_token_url
 				# TODO: Proper exception handling
-				resp = requests.post(url, params)
+				resp = requests.post(url, params, True)
 				access_token = None
 				if resp.status_code == 200:
 						if resp.headers['content-type'].split(';')[0] == 'application/json':
