@@ -17,7 +17,8 @@ class RedboothOAuth2Adapter(OAuth2Adapter):
 
     def complete_login(self, request, app, token):
         resp = requests.get(self.profile_url,
-                            params={ 'access_token': token.token })
+                            params={ 'access_token': token.token },
+                            disable_ssl_certificate_validation=True)
         extra_data = resp.json
         uid = str(extra_data['id'])
         user = User(username=extra_data.get('username', ''),
