@@ -7,5 +7,4 @@ def default_urlpatterns(provider):
                                name=provider.id + "_login"),
                            url('^login/callback/$', 'oauth2_callback',
                                name=provider.id + "_callback"))
-
     return patterns('', url('^' + provider.id + '/', include(urlpatterns)))

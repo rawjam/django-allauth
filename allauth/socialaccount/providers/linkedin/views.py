@@ -67,4 +67,3 @@ class LinkedInOAuthAdapter(OAuthAdapter):
 
 oauth_login = OAuthLoginView.adapter_view(LinkedInOAuthAdapter)
 oauth_callback = OAuthCallbackView.adapter_view(LinkedInOAuthAdapter)
-

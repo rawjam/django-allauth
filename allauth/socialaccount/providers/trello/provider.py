@@ -1,26 +1,25 @@
 from allauth.socialaccount import providers
 from allauth.socialaccount.providers.base import ProviderAccount
-from allauth.socialaccount.providers.oauth2.provider import OAuth2Provider
+from allauth.socialaccount.providers.oauth.provider import OAuthProvider
 from allauth.socialaccount.models import SocialApp, SocialToken
 from allauth.socialaccount import requests
 
 import oauth2 as oauth
 import urllib, urllib2, json, certifi
 
-class BasecampAccount(ProviderAccount):
-    BASE_URL = 'https://basecamp.com/api/v1'
+class TrelloAccount(ProviderAccount):
+    BASE_URL = 'https://api.trello.com/1'
 
-    def get_profile_url(self):
-        return '%s/people/me.json' % self.BASE_URL
-
-    def get_avatar_url(self):
-        return self.account.extra_data.get('avatar_url')
+#     def get_profile_url(self):
+#         return '%s/people/me.json' % self.BASE_URL
+# 
+#     def get_avatar_url(self):
+#         return self.account.extra_data.get('avatar_url')
 
     def request_url(self, url, args={}, callback=None):
         account = self.account
         app = SocialApp.objects.get_current(self.account.get_provider().id)
         tokens = SocialToken.objects.filter(app=app, account=account).order_by('-id')
-
 
         if tokens:
             token = tokens[0]
@@ -31,28 +30,26 @@ class BasecampAccount(ProviderAccount):
 
             if not 'http' in url:
                 url = '%s%s' % (self.BASE_URL, url)
-            print url
             response, data = client.request(url)
-            print response
+
             if callback: callback(url, data)
             return json.loads(data)
         return None
 
 
     def __unicode__(self):
-        dflt = super(BasecampAccount, self).__unicode__()
+        dflt = super(TrelloAccount, self).__unicode__()
         return self.account.extra_data.get('username', dflt)
 
 
-class BasecampProvider(OAuth2Provider):
-    id = 'basecamp'
-    name = 'Basecamp'
-    package = 'allauth.socialaccount.providers.basecamp'
-    account_class = BasecampAccount
+class TrelloProvider(OAuthProvider):
+    id = 'trello'
+    name = 'Trello'
+    package = 'allauth.socialaccount.providers.trello'
+    account_class = TrelloAccount
 
     def get_default_scope(self):
-        scope = ['read_projects', 'offline_access']
+        scope = ['read', 'write']
         return scope
 
-
-providers.registry.register(BasecampProvider)
+providers.registry.register(TrelloProvider)
