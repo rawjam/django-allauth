@@ -23,12 +23,10 @@ class TrelloOAuthAdapter(OAuthAdapter):
     def complete_login(self, request, app, token):
         consumer = oauth.Consumer(key=app.key, secret=app.secret)
         access_token = oauth.Token(key=token.token, secret=token.token_secret)
-        client = oauth.Client(consumer, access_token)
+        client = oauth.Client(consumer, access_token, disable_ssl_certificate_validation=True)
         client.ca_certs = certifi.where()
 
         response, data = client.request(self.profile_url)
-        print response
-        print data
 
         extra_data = json.loads(data)
 

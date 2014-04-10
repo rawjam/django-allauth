@@ -51,7 +51,7 @@ class OAuthView(object):
                              self.adapter.access_token_url,
                              self.adapter.authorize_url,
                              request.GET.get('callback_url', callback_url),
-                             parameters=parameters)
+                             parameters=parameters, disable_ssl_certificate_validation=True)
         return client
 
 

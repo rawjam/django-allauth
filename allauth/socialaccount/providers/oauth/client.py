@@ -44,7 +44,7 @@ class OAuthError(Exception):
 class OAuthClient(object):
 
     def __init__(self, request, consumer_key, consumer_secret, request_token_url,
-        access_token_url, authorization_url, callback_url, parameters=None):
+        access_token_url, authorization_url, callback_url, parameters=None, disable_ssl_certificate_validation=False):
 
         self.request = request
 
@@ -56,7 +56,8 @@ class OAuthClient(object):
         self.consumer_secret = consumer_secret
 
         self.consumer = oauth.Consumer(consumer_key, consumer_secret)
-        self.client = oauth.Client(self.consumer)
+        self.disable_ssl_certificate_validation = disable_ssl_certificate_validation
+        self.client = oauth.Client(self.consumer, disable_ssl_certificate_validation=disable_ssl_certificate_validation)
 
         self.signature_method = oauth.SignatureMethod_HMAC_SHA1()
 
@@ -104,7 +105,7 @@ class OAuthClient(object):
         if self.access_token is None:
             request_token = self._get_rt_from_session()
             token = oauth.Token(request_token['oauth_token'], request_token['oauth_token_secret'])
-            self.client = oauth.Client(self.consumer, token)
+            self.client = oauth.Client(self.consumer, token, disable_ssl_certificate_validation=self.disable_ssl_certificate_validation)
             at_url = self.access_token_url
 
             # Passing along oauth_verifier is required according to:
@@ -193,7 +194,7 @@ class OAuth(object):
 
         token = oauth.Token(access_token['oauth_token'], access_token['oauth_token_secret'])
 
-        client = oauth.Client(self.consumer, token)
+        client = oauth.Client(self.consumer, token, disable_ssl_certificate_validation=self.disable_ssl_certificate_validation)
 
         body = urllib.urlencode(params)
 
