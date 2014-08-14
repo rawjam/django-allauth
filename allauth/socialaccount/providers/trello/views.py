@@ -35,7 +35,7 @@ class TrelloOAuthAdapter(OAuthAdapter):
             username=extra_data.get('username', ''),
             email=extra_data.get('email', ''),
             first_name=full_name[0] if full_name else '',
-            last_name=full_name[1] if full_name else '',
+            last_name=full_name[1] if len(full_name) > 1 else '',
         )
         account = SocialAccount(
             user=user,
