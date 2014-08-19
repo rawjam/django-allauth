@@ -68,9 +68,9 @@ class OAuthClient(object):
         self.errors = []
         self.request_token = None
         self.access_token = None
-        
+
         self.force_https = False
-        
+
         try:
             self.force_https = settings.FORCE_USE_HTTPS
         except AttributeError:
@@ -120,7 +120,7 @@ class OAuthClient(object):
             self.access_token = dict(parse_qsl(content))
 
             self.request.session['oauth_%s_access_token' % get_token_prefix(self.request_token_url)] = self.access_token
-        
+
         return self.access_token
 
     def _get_rt_from_session(self):
@@ -194,7 +194,10 @@ class OAuth(object):
 
         token = oauth.Token(access_token['oauth_token'], access_token['oauth_token_secret'])
 
-        client = oauth.Client(self.consumer, token, disable_ssl_certificate_validation=self.disable_ssl_certificate_validation)
+        try:
+            client = oauth.Client(self.consumer, token, disable_ssl_certificate_validation=self.disable_ssl_certificate_validation)
+        except:
+            client = oauth.Client(self.consumer, token)
 
         body = urllib.urlencode(params)
 

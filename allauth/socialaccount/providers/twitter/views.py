@@ -45,4 +45,3 @@ class TwitterOAuthAdapter(OAuthAdapter):
 
 oauth_login = OAuthLoginView.adapter_view(TwitterOAuthAdapter)
 oauth_callback = OAuthCallbackView.adapter_view(TwitterOAuthAdapter)
-
