@@ -26,6 +26,7 @@ class RedboothAccount(ProviderAccount):
 			})
 
 			url = '%s%s' % (self.BASE_URL, url)
+			print "---", url
 			response = requests.get(url, args, True)
 
 			if callback: callback(url, response.content)
