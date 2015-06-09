@@ -2,9 +2,9 @@
 
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import simplejson
 from django.utils.encoding import smart_unicode
 
+import json as simplejson
 
 class JSONField(models.TextField):
     """Simple JSON field that stores python structures as JSON strings
@@ -51,10 +51,3 @@ class JSONField(models.TextField):
     def value_from_object(self, obj):
         """Return value dumped to string."""
         return self.get_prep_value(self._get_val_from_obj(obj))
-
-
-try:
-    from south.modelsinspector import add_introspection_rules
-    add_introspection_rules([], ["^allauth\.socialaccount\.fields\.JSONField"])
-except:
-    pass

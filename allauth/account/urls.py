@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 
 import views
 
@@ -13,13 +13,13 @@ urlpatterns = patterns("",
 #        "template": "account/password_delete_done.html",
 #    }, name="acct_passwd_delete_done"),
     url(r"^logout/$", views.logout, name="account_logout"),
-    
+
     url(r"^confirm_email/(?P<key>\w+)/$", views.confirm_email, name="account_confirm_email"),
-    
+
     # password reset
     url(r"^password/reset/$", views.password_reset, name="account_reset_password"),
     url(r"^password/reset/ajax/$", views.password_reset_ajax, name="account_reset_password_ajax"),
     url(r"^password/reset/done/$", views.password_reset_done, name="account_reset_password_done"),
     url(r"^password/reset/key/(?P<uidb36>[0-9A-Za-z]+)-(?P<key>.+)/$", views.password_reset_from_key, name="account_reset_password_from_key"),
-    
+
 )

@@ -1,10 +1,10 @@
 from django.template.loader import render_to_string
 from django.template import RequestContext
-from django.utils import simplejson
 
 from allauth.socialaccount import providers
 from allauth.socialaccount.providers.base import ProviderAccount, Provider
 
+import json as simplejson
 
 class PersonaAccount(ProviderAccount):
     def __unicode__(self):

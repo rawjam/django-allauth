@@ -1,5 +1,3 @@
-from django.utils import simplejson
-
 from allauth.socialaccount.providers.oauth.client import OAuth
 from allauth.socialaccount.providers.oauth.views import (OAuthAdapter,
                                                          OAuthLoginView,
@@ -8,6 +6,8 @@ from allauth.socialaccount.models import SocialLogin, SocialAccount
 from allauth.utils import get_user_model
 
 from provider import TwitterProvider
+
+import json as simplejson
 
 User = get_user_model()
 

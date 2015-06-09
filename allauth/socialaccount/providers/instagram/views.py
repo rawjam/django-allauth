@@ -1,6 +1,6 @@
 import urllib
 import httplib2
-from django.utils import simplejson
+import json as simplejson
 
 from allauth.socialaccount import requests
 from allauth.socialaccount.models import SocialLogin, SocialAccount

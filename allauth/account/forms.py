@@ -24,7 +24,6 @@ import app_settings
 from adapter import get_adapter
 
 User = get_user_model()
-USERNAME_REGEX = UserCreationForm().fields['username'].regex
 
 class PasswordField(forms.CharField):
 
@@ -197,9 +196,6 @@ class BaseSignupForm(_base_signup_form_class()):
 
     def clean_username(self):
         value = self.cleaned_data["username"]
-        if not USERNAME_REGEX.match(value):
-            raise forms.ValidationError(_("Usernames can only contain "
-                                          "letters, digits and @/./+/-/_."))
         try:
             User.objects.get(username__iexact=value)
         except User.DoesNotExist:
@@ -441,5 +437,3 @@ class ResetPasswordKeyForm(forms.Form):
         user.save()
         # mark password reset object as reset
         # PasswordReset.objects.filter(temp_key=self.temp_key).update(reset=True)
-
-

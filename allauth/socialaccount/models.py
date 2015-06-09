@@ -1,7 +1,8 @@
 from django.db import models
 from django.contrib.auth import authenticate
 from django.contrib.sites.models import Site
-from django.utils import simplejson
+
+import json as simplejson
 
 import allauth.app_settings
 from allauth.utils import get_login_redirect_url
@@ -237,5 +238,3 @@ class SocialLogin(object):
         else:
             state = {}
         return state
-
-
