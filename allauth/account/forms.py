@@ -246,17 +246,17 @@ class SignupForm(BaseSignupForm):
 
     def __init__(self, *args, **kwargs):
         super(SignupForm, self).__init__(*args, **kwargs)
-        current_order =self.fields.keyOrder
-        preferred_order = self.fields.keyOrder = ["username",
-                                                  "password1",
-                                                  "password2",
-                                                  "email"]
-        if not app_settings.USERNAME_REQUIRED:
-            preferred_order = self.fields.keyOrder = ["email",
-                                                      "password1",
-                                                      "password2"]
-        # Make sure custom fields are put below main signup fields
-        self.fields.keyOrder = preferred_order + [ f for f in current_order if not f in preferred_order ]
+        # current_order =self.fields.keyOrder
+        # preferred_order = self.fields.keyOrder = ["username",
+        #                                           "password1",
+        #                                           "password2",
+        #                                           "email"]
+        # if not app_settings.USERNAME_REQUIRED:
+        #     preferred_order = self.fields.keyOrder = ["email",
+        #                                               "password1",
+        #                                               "password2"]
+        # # Make sure custom fields are put below main signup fields
+        # self.fields.keyOrder = preferred_order + [ f for f in current_order if not f in preferred_order ]
         if not app_settings.SIGNUP_PASSWORD_VERIFICATION:
             del self.fields["password2"]
 
