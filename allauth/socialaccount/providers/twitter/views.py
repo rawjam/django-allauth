@@ -35,7 +35,7 @@ class TwitterOAuthAdapter(OAuthAdapter):
                             self.request_token_url)
         extra_data = client.get_user_info()
         uid = extra_data['id']
-        user = User(username=extra_data['screen_name'])
+        user, created = User.objects.get_or_create(username=extra_data['screen_name'])
         account = SocialAccount(user=user,
                                 uid=uid,
                                 provider=TwitterProvider.id,
